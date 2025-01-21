@@ -17,4 +17,11 @@ fun HomeScreen() {
         fontWeight = FontWeight.Bold,
         modifier = Modifier.padding(top = 16.dp)
     )
+
+    Text(
+        text = "A tous,",
+        fontSize = 28.sp,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(top = 16.dp)
+    )
 }
