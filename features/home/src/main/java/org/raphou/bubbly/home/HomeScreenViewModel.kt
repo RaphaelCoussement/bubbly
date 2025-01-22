@@ -21,7 +21,7 @@ class HomeScreenViewModel(private val themeRepository: IThemeRepository) : ViewM
     private fun loadThemes() {
         viewModelScope.launch {
             _themes.value = themeRepository.getPopularThemes()
-            Log.d("HomeViewModel", "Fetched Themes: ${_themes.value}")
+            Log.d("HomeViewModel", "Fetched Themes: ${_themes.value.map { it.displayName }}")
         }
     }
 }
