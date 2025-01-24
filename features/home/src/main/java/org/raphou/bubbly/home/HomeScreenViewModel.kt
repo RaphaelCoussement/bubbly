@@ -1,18 +1,23 @@
 package org.raphou.bubbly.home
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import org.raphou.domain.models.Theme
 import org.raphou.domain.repositories.IThemeRepository
 
-class HomeScreenViewModel(private val themeRepository: IThemeRepository) : ViewModel() {
+class HomeScreenViewModel : ViewModel(), KoinComponent {
 
-    private val _themes = MutableStateFlow<List<Theme>>(emptyList())
-    val themes: StateFlow<List<Theme>> = _themes
+    private val themeRepository: IThemeRepository by inject()
+
+    private val _themes: MutableStateFlow<List<Theme>> = MutableStateFlow(emptyList())
+    val themes: StateFlow<List<Theme>>
+        get() = _themes
 
     init {
         loadThemes()
@@ -20,8 +25,8 @@ class HomeScreenViewModel(private val themeRepository: IThemeRepository) : ViewM
 
     private fun loadThemes() {
         viewModelScope.launch {
-            _themes.value = themeRepository.getPopularThemes()
-            Log.d("HomeViewModel", "Fetched Themes: ${_themes.value}")
+            val fetchedThemes = themeRepository.getPopularThemes()
+            _themes.update { fetchedThemes }
         }
     }
 }

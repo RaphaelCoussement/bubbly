@@ -9,4 +9,5 @@ val dataModule = module {
     single<IThemeRepository> {
         ThemeRepositoryImpl()
     }
+
 }
