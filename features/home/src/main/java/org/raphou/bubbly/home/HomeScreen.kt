@@ -1,5 +1,6 @@
 package org.raphou.bubbly.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,15 +20,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.R
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import org.raphou.bubbly.home.R.string.*
 import org.raphou.bubbly.ui.R.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(viewModel: HomeScreenViewModel, navController: NavHostController) {
+fun HomeScreen(navController: NavHostController) {
+
+    val viewModel: HomeScreenViewModel = viewModel()
+
     val themes by viewModel.themes.collectAsState()
 
     Box(
@@ -46,13 +53,13 @@ fun HomeScreen(viewModel: HomeScreenViewModel, navController: NavHostController)
             ) {
                 Column {
                     Text(
-                        text = "Bubbly",
+                        text = stringResource(bubbly),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black,
                     )
                     Text(
-                        text = "histoire de jouer !",
+                        text = stringResource(histoire_de_jouer),
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Light,
                         color = Color.Black,
@@ -61,7 +68,7 @@ fun HomeScreen(viewModel: HomeScreenViewModel, navController: NavHostController)
                 IconButton(onClick = { navController.navigate("rules") }) {
                     Icon(
                         imageVector = Icons.Default.Info,
-                        contentDescription = "Info",
+                        contentDescription = stringResource(info),
                         tint = Color(0xFFE53A0C)
                     )
                 }
@@ -82,7 +89,7 @@ fun HomeScreen(viewModel: HomeScreenViewModel, navController: NavHostController)
                     onValueChange = {},
                     placeholder = {
                         Text(
-                            text = "Entrer le code de la partie",
+                            text = stringResource(entrer_le_code_de_la_partie),
                             color = Color.Gray
                         )
                     },
@@ -94,10 +101,9 @@ fun HomeScreen(viewModel: HomeScreenViewModel, navController: NavHostController)
                     )
                 )
                 IconButton(onClick = { /* Action QR Code */ }) {
-                    Icon(
-                        painter = painterResource(id = drawable.ic_qrcode),
-                        contentDescription = "QR Code",
-                        tint = Color(0xFFE53A0C)
+                    Image(
+                        painter = painterResource(id = drawable.baseline_qr_code_scanner_24),
+                        contentDescription = stringResource(qr_code_scanner_icon),
                     )
                 }
             }
@@ -105,7 +111,7 @@ fun HomeScreen(viewModel: HomeScreenViewModel, navController: NavHostController)
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Thèmes populaires",
+                text = stringResource(themes_populaires),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black,
@@ -156,7 +162,7 @@ fun HomeScreen(viewModel: HomeScreenViewModel, navController: NavHostController)
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
-                contentDescription = "Add",
+                contentDescription = stringResource(add),
                 tint = Color.White
             )
         }

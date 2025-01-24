@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bubbly">Bubbly</string>
+    <string name="histoire_de_jouer">Histoire de jouer !</string>
+    <string name="entrer_le_code_de_la_partie">Entrer le code de la partie</string>
+    <string name="themes_populaires">Thèmes populaires</string>
+    <string name="retour">Retour</string>
+    <string name="regles_du_jeu">Règles du jeu</string>
+    <string name="info">Info</string>
+    <string name="qr_code_scanner_icon">QR Code Scanner Icon</string>
+    <string name="add">Add</string>
+</resources>

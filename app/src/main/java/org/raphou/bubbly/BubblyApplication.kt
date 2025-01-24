@@ -4,7 +4,6 @@ import android.app.Application
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.raphou.bubbly.data.di.dataModule
-import org.raphou.bubbly.home.di.homeModule
 
 
 class BubblyApplication : Application() {
@@ -14,8 +13,7 @@ class BubblyApplication : Application() {
         startKoin {
             androidContext(this@BubblyApplication)
             modules(
-                dataModule,
-                homeModule
+                dataModule
             )
         }
     }

@@ -6,7 +6,8 @@ import org.raphou.bubbly.home.HomeScreenViewModel
 import org.raphou.domain.repositories.IThemeRepository
 
 
+/*
 val homeModule = module {
     viewModel { HomeScreenViewModel(get<IThemeRepository>()) }
 
-}
+}*/

@@ -17,16 +17,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val homeScreenViewModel: HomeScreenViewModel by inject()
-
         setContent {
-            Content(homeScreenViewModel)
+            Content()
         }
     }
 }
 
 @Composable
-fun Content(homeScreenViewModel: HomeScreenViewModel) {
+fun Content() {
 
     val navController = rememberNavController()
 
@@ -35,7 +33,7 @@ fun Content(homeScreenViewModel: HomeScreenViewModel) {
         startDestination = "home"
     ) {
         composable("home") {
-            HomeScreen(viewModel = homeScreenViewModel, navController = navController)
+            HomeScreen(navController = navController)
         }
         composable("rules") {
             RulesScreen(navController = navController)
