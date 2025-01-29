@@ -10,8 +10,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import org.koin.android.ext.android.inject
+import org.raphou.bubbly.home.CreateLobbyScreen
 import org.raphou.bubbly.home.HomeScreen
 import org.raphou.bubbly.home.HomeScreenViewModel
+import org.raphou.bubbly.home.JoinLobbyScreen
 import org.raphou.bubbly.home.LobbyScreen
 import org.raphou.bubbly.home.RulesScreen
 
@@ -42,15 +44,15 @@ fun Content() {
             RulesScreen(navController = navController)
         }
         composable(
-            "lobby/{isCreator}/{code}",
-            arguments = listOf(
-                navArgument("isCreator") { type = NavType.BoolType},
-                navArgument("code") { defaultValue = "" }
-            )
+            "joinLobby/{code}",
+            arguments = listOf(navArgument("code") { defaultValue = "" })
         ) { backStackEntry ->
-            val isCreator = backStackEntry.arguments?.getBoolean("isCreator") ?: false
             val code = backStackEntry.arguments?.getString("code").orEmpty()
-            LobbyScreen(navController = navController, isCreator = isCreator, code = code)
+            JoinLobbyScreen(navController = navController, code = code)
+        }
+
+        composable("createLobby") {
+            CreateLobbyScreen(navController = navController)
         }
     }
 }

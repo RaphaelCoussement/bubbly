@@ -116,7 +116,7 @@ fun HomeScreen(navController: NavHostController) {
                         contentDescription = stringResource(qr_code_scanner_icon),
                     )
                 }
-                IconButton(onClick = { navController.navigate("lobby/false/$code") }) {
+                IconButton(onClick = { navController.navigate("joinLobby/$code") }) {
                     Icon(
                         imageVector = Icons.Default.ArrowForward,
                         contentDescription = stringResource(info),
@@ -170,7 +170,7 @@ fun HomeScreen(navController: NavHostController) {
         }
 
         FloatingActionButton(
-            onClick = { navController.navigate("lobby/true/0") },
+            onClick = { navController.navigate("createLobby") },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
