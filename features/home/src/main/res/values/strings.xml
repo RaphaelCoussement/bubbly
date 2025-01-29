@@ -9,4 +9,8 @@
     <string name="info">Info</string>
     <string name="qr_code_scanner_icon">QR Code Scanner Icon</string>
     <string name="add">Add</string>
+    <string name="code_de_session">Code de Session: %1$s</string>
+    <string name="chargement">Chargement...</string>
+    <string name="participants">Participants:</string>
+    <string name="aucun_participant">Aucun participant</string>
 </resources>

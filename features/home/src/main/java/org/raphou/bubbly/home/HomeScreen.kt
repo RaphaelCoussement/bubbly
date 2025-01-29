@@ -9,12 +9,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.R
@@ -29,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import org.raphou.bubbly.home.R.string.*
 import org.raphou.bubbly.ui.R.*
+import androidx.compose.runtime.setValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,10 +42,13 @@ fun HomeScreen(navController: NavHostController) {
 
     val themes by viewModel.themes.collectAsState()
 
+    // variable mutable pour l'input du code
+    var code by remember { mutableStateOf("") }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFF2E7))
+            .background(colorResource(id = color.beige_background))
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
 
@@ -86,8 +93,10 @@ fun HomeScreen(navController: NavHostController) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextField(
-                    value = "",
-                    onValueChange = {},
+                    value = code,
+                    onValueChange = { newCode ->
+                        code = newCode
+                    },
                     placeholder = {
                         Text(
                             text = stringResource(entrer_le_code_de_la_partie),
@@ -105,6 +114,13 @@ fun HomeScreen(navController: NavHostController) {
                     Image(
                         painter = painterResource(id = drawable.baseline_qr_code_scanner_24),
                         contentDescription = stringResource(qr_code_scanner_icon),
+                    )
+                }
+                IconButton(onClick = { navController.navigate("joinLobby/$code") }) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowForward,
+                        contentDescription = stringResource(info),
+                        tint = colorResource(id = color.orange_primary)
                     )
                 }
             }
@@ -154,7 +170,7 @@ fun HomeScreen(navController: NavHostController) {
         }
 
         FloatingActionButton(
-            onClick = { /* Action d'ajout */ },
+            onClick = { navController.navigate("createLobby") },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
@@ -169,3 +185,4 @@ fun HomeScreen(navController: NavHostController) {
         }
     }
 }
+
