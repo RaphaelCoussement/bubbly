@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.jetbrains.kotlin.android)
+    id ("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -30,5 +31,6 @@ android {
 dependencies {
 
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
 }

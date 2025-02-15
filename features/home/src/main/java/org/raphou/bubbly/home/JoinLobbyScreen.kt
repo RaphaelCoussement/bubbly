@@ -10,10 +10,20 @@ import androidx.navigation.NavHostController
 fun JoinLobbyScreen(navController: NavHostController, code: String) {
     val viewModel: LobbyScreenViewModel = viewModel()
     val lobby = viewModel.currentSession.collectAsState().value
+    val players = viewModel.players.collectAsState().value
+    val isGameStarted = viewModel.isGameStarted.collectAsState().value
 
     LaunchedEffect(code) {
         viewModel.joinLobby(code)
     }
 
-    LobbyContent(lobby = lobby, onBack = { navController.popBackStack() })
+    LaunchedEffect(isGameStarted) {
+        if (isGameStarted) {
+            navController.navigate("game/${lobby?.id}/false")
+        }
+    }
+
+    LobbyContent(lobby = lobby, onBack = { navController.popBackStack() }, players)
 }
+
+

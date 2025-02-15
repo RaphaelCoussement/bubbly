@@ -42,146 +42,157 @@ fun HomeScreen(navController: NavHostController) {
 
     val themes by viewModel.themes.collectAsState()
 
+    val isLoading by viewModel.isLoading.collectAsState()
+
     // variable mutable pour l'input du code
     var code by remember { mutableStateOf("") }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colorResource(id = color.beige_background))
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = colorResource(id = color.orange_primary))
+        }
+    }else {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colorResource(id = color.beige_background))
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = stringResource(bubbly),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black,
-                    )
-                    Text(
-                        text = stringResource(histoire_de_jouer),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Light,
-                        color = Color.Black,
-                    )
-                }
-                IconButton(onClick = { navController.navigate("rules") }) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = stringResource(info),
-                        tint = colorResource(id = color.orange_primary)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .background(Color.White, RoundedCornerShape(8.dp))
-                    .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextField(
-                    value = code,
-                    onValueChange = { newCode ->
-                        code = newCode
-                    },
-                    placeholder = {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
                         Text(
-                            text = stringResource(entrer_le_code_de_la_partie),
-                            color = Color.Gray
+                            text = stringResource(bubbly),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black,
                         )
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = TextFieldDefaults.textFieldColors(
-                        containerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                        Text(
+                            text = stringResource(histoire_de_jouer),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Light,
+                            color = Color.Black,
+                        )
+                    }
+                    IconButton(onClick = { navController.navigate("rules") }) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = stringResource(info),
+                            tint = colorResource(id = color.orange_primary)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .background(Color.White, RoundedCornerShape(8.dp))
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextField(
+                        value = code,
+                        onValueChange = { newCode ->
+                            code = newCode
+                        },
+                        placeholder = {
+                            Text(
+                                text = stringResource(entrer_le_code_de_la_partie),
+                                color = Color.Gray
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = TextFieldDefaults.textFieldColors(
+                            containerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        )
                     )
+                    IconButton(onClick = { /* Action QR Code */ }) {
+                        Image(
+                            painter = painterResource(id = drawable.baseline_qr_code_scanner_24),
+                            contentDescription = stringResource(qr_code_scanner_icon),
+                        )
+                    }
+                    IconButton(onClick = { navController.navigate("joinLobby/$code") }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = stringResource(info),
+                            tint = colorResource(id = color.orange_primary)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(themes_populaires),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
-                IconButton(onClick = { /* Action QR Code */ }) {
-                    Image(
-                        painter = painterResource(id = drawable.baseline_qr_code_scanner_24),
-                        contentDescription = stringResource(qr_code_scanner_icon),
-                    )
-                }
-                IconButton(onClick = { navController.navigate("joinLobby/$code") }) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowForward,
-                        contentDescription = stringResource(info),
-                        tint = colorResource(id = color.orange_primary)
-                    )
-                }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = stringResource(themes_populaires),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Liste des thèmes
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                items(themes.size) { index ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { /* Action sur le thème */ },
-                        shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
-                    ) {
-                        Box(
+                // Liste des thèmes
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    items(themes.size) { index ->
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
+                                .clickable { /* Action sur le thème */ },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White)
                         ) {
-                            Text(
-                                text = themes[index].displayName,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.Black
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = themes[index].name,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.Black
+                                )
+                            }
                         }
                     }
                 }
             }
-        }
 
-        FloatingActionButton(
-            onClick = { navController.navigate("createLobby") },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            containerColor = colorResource(id = color.orange_primary),
-            shape = CircleShape
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = stringResource(add),
-                tint = Color.White
-            )
+            FloatingActionButton(
+                onClick = { navController.navigate("createLobby") },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+                containerColor = colorResource(id = color.orange_primary),
+                shape = CircleShape
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(add),
+                    tint = Color.White
+                )
+            }
         }
     }
 }

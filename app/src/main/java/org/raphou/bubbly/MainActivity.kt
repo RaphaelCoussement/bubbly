@@ -1,6 +1,7 @@
 package org.raphou.bubbly
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
@@ -9,12 +10,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import org.koin.android.ext.android.inject
 import org.raphou.bubbly.home.CreateLobbyScreen
+import org.raphou.bubbly.home.GameScreen
 import org.raphou.bubbly.home.HomeScreen
-import org.raphou.bubbly.home.HomeScreenViewModel
 import org.raphou.bubbly.home.JoinLobbyScreen
-import org.raphou.bubbly.home.LobbyScreen
 import org.raphou.bubbly.home.RulesScreen
 
 class MainActivity : ComponentActivity() {
@@ -51,8 +50,21 @@ fun Content() {
             JoinLobbyScreen(navController = navController, code = code)
         }
 
-        composable("createLobby") {
+        composable("createLobby") { backStackEntry ->
+            val code = backStackEntry.arguments?.getString("code").orEmpty()
             CreateLobbyScreen(navController = navController)
+        }
+
+        composable(
+            "game/{lobbyId}/{isFirstPlayer}",
+            arguments = listOf(
+                navArgument("lobbyId") { type = NavType.StringType },
+                navArgument("isFirstPlayer") { type = NavType.BoolType }
+            )
+        ) { backStackEntry ->
+            val lobbyId = backStackEntry.arguments?.getString("lobbyId").orEmpty()
+            val isFirstPlayer = backStackEntry.arguments?.getBoolean("isFirstPlayer") ?: false
+            GameScreen(navController = navController, lobbyId = lobbyId, isFirstPlayer = isFirstPlayer)
         }
     }
 }

@@ -16,12 +16,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.raphou.bubbly.domain.lobby.Lobby
+import org.raphou.bubbly.domain.lobby.Player
 import org.raphou.bubbly.home.R.*
 import org.raphou.bubbly.home.R.string.*
 import org.raphou.bubbly.ui.R
 
 @Composable
-fun LobbyContent(lobby: Lobby?, onBack: () -> Unit) {
+fun LobbyContent(lobby: Lobby?, onBack: () -> Unit, players: List<Player>) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -43,10 +44,7 @@ fun LobbyContent(lobby: Lobby?, onBack: () -> Unit) {
             }
 
             Text(
-                text = stringResource(
-                    code_de_session,
-                    lobby?.code ?: stringResource(chargement)
-                ),
+                text = "Code de session: ${lobby?.code ?: "Chargement..."}",
                 style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
                 color = colorResource(id = R.color.orange_primary),
                 modifier = Modifier
@@ -55,7 +53,7 @@ fun LobbyContent(lobby: Lobby?, onBack: () -> Unit) {
             )
 
             Text(
-                text = stringResource(participants),
+                text = "Participants",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = Color.Black,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -65,10 +63,10 @@ fun LobbyContent(lobby: Lobby?, onBack: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                if (lobby?.players.isNullOrEmpty()) {
+                if (players.isEmpty()) {
                     item {
                         Text(
-                            text = stringResource(aucun_participant),
+                            text = "Aucun participant",
                             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                             color = Color.Gray,
                             modifier = Modifier
@@ -78,7 +76,7 @@ fun LobbyContent(lobby: Lobby?, onBack: () -> Unit) {
                         )
                     }
                 } else {
-                    items(lobby?.players.orEmpty()) { player ->
+                    items(players) { player ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = MaterialTheme.shapes.medium,
@@ -104,3 +102,4 @@ fun LobbyContent(lobby: Lobby?, onBack: () -> Unit) {
         }
     }
 }
+

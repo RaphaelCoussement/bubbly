@@ -50,6 +50,8 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
 
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
     //DI
     implementation(platform(libs.koin.bom))
     implementation(libs.koin.core)

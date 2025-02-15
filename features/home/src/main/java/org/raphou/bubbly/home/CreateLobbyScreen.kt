@@ -12,22 +12,34 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import kotlinx.coroutines.flow.SharedFlow
 import org.raphou.bubbly.ui.R
+
 
 @Composable
 fun CreateLobbyScreen(navController: NavHostController) {
     val viewModel: LobbyScreenViewModel = viewModel()
     val lobby = viewModel.currentSession.collectAsState().value
+    val players = viewModel.players.collectAsState().value
+    val isGameStarted = viewModel.isGameStarted.collectAsState().value
 
     LaunchedEffect(Unit) {
         viewModel.createLobby()
     }
 
+    LaunchedEffect(isGameStarted) {
+        if (isGameStarted) {
+            navController.navigate("game/${lobby?.id}/true")
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        LobbyContent(lobby = lobby, onBack = { navController.popBackStack() })
+        LobbyContent(lobby = lobby, onBack = { navController.popBackStack() }, players)
 
         FloatingActionButton(
-            onClick = { /* Action pour démarrer la session */ },
+            onClick = {
+                viewModel.startGame()
+            },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(16.dp)
@@ -44,3 +56,5 @@ fun CreateLobbyScreen(navController: NavHostController) {
         }
     }
 }
+
+
