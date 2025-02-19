@@ -18,7 +18,7 @@ import org.raphou.bubbly.ui.R
 
 @Composable
 fun CreateLobbyScreen(navController: NavHostController) {
-    val viewModel: LobbyScreenViewModel = viewModel()
+    val viewModel: CreateLobbyScreenViewModel = viewModel()
     val lobby = viewModel.currentSession.collectAsState().value
     val players = viewModel.players.collectAsState().value
     val isGameStarted = viewModel.isGameStarted.collectAsState().value
