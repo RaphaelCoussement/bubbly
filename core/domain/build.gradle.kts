@@ -32,5 +32,5 @@ dependencies {
 
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-
+    implementation(libs.firebase.firestore)
 }
