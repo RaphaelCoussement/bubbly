@@ -18,8 +18,8 @@ fun JoinLobbyScreen(navController: NavHostController, code: String) {
     }
 
     LaunchedEffect(navigateToGame) {
-        navigateToGame?.let { gameId ->
-            navController.navigate("game/$gameId/false")
+        navigateToGame?.let {
+            navController.navigate("game/other-players")
         }
     }
 

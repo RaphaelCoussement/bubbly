@@ -54,6 +54,9 @@ dependencies {
         project(":features:home")
     )
     implementation(
+        project(":features:game")
+    )
+    implementation(
         project(":core:data")
     )
     implementation(

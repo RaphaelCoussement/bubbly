@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "org.raphou.bubbly.home"
+    namespace = "org.raphou.bubbly.game"
     compileSdk = 34
 
     defaultConfig {
@@ -21,8 +21,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-
-
     // Compose part
     buildFeatures {
         compose = true
@@ -42,9 +40,6 @@ dependencies {
     )
     implementation(
         project(":core:ui")
-    )
-    implementation(
-        project(":features:game")
     )
 
     //Android/Kotlin

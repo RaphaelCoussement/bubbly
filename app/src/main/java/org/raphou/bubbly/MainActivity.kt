@@ -10,6 +10,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import org.raphou.bubbly.game.FirstPlayerScreen
+import org.raphou.bubbly.game.OtherPlayerScreen
 import org.raphou.bubbly.home.CreateLobbyScreen
 import org.raphou.bubbly.home.GameScreen
 import org.raphou.bubbly.home.HomeScreen
@@ -65,6 +67,17 @@ fun Content() {
             val lobbyId = backStackEntry.arguments?.getString("lobbyId").orEmpty()
             val isFirstPlayer = backStackEntry.arguments?.getBoolean("isFirstPlayer") ?: false
             GameScreen(navController = navController, lobbyId = lobbyId, isFirstPlayer = isFirstPlayer)
+        }
+
+        composable(
+            "game/first-player",
+        ) {
+            FirstPlayerScreen()
+        }
+        composable(
+            "game/other-players",
+        ) {
+            OtherPlayerScreen()
         }
     }
 }

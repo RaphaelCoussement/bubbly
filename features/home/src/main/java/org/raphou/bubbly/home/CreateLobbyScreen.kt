@@ -29,7 +29,7 @@ fun CreateLobbyScreen(navController: NavHostController) {
 
     LaunchedEffect(isGameStarted) {
         if (isGameStarted) {
-            navController.navigate("game/${lobby?.id}/true")
+            navController.navigate("game/first-player")
         }
     }
 
