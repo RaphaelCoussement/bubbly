@@ -4,7 +4,7 @@ import android.util.Log
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
-import org.raphou.domain.models.Theme
+import org.raphou.bubbly.domain.theme.Theme
 import org.raphou.domain.repositories.IThemeRepository
 
 class ThemeRepositoryImpl : IThemeRepository {
@@ -18,11 +18,11 @@ class ThemeRepositoryImpl : IThemeRepository {
             if (existingThemes.isEmpty) {
                 // Insérer les thèmes par défaut si la collection est vide
                 val defaultThemes = listOf(
-                    Theme("1", "Cinéma 🍿"),
-                    Theme("2", "Voyage ✈️"),
-                    Theme("3", "Musique 🎵"),
-                    Theme("4", "Jeux vidéo 🎮"),
-                    Theme("5", "Soirées rétro 🎉")
+                    Theme("1", "Culture Pop"),
+                    Theme("2", "Nourriture"),
+                    Theme("3", "Sport"),
+                    Theme("4", "Voyage"),
+                    Theme("5", "Objet")
                 )
 
                 defaultThemes.forEach { theme ->

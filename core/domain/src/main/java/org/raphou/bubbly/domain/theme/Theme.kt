@@ -1,4 +1,4 @@
-package org.raphou.domain.models
+package org.raphou.bubbly.domain.theme
 
 data class Theme(
     val id: String = "",
