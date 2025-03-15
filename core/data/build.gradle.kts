@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.jetbrains.kotlin.android)
     id("com.google.devtools.ksp")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -34,6 +35,7 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
     //DI
     implementation(platform(libs.koin.bom))
@@ -42,6 +44,7 @@ dependencies {
     //Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.firebase.firestore)
     ksp(libs.androidx.room.compiler)
 
     //Datastore

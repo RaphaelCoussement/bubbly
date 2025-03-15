@@ -16,8 +16,10 @@ class HomeScreenViewModel : ViewModel(), KoinComponent {
     private val themeRepository: IThemeRepository by inject()
 
     private val _themes: MutableStateFlow<List<Theme>> = MutableStateFlow(emptyList())
-    val themes: StateFlow<List<Theme>>
-        get() = _themes
+    val themes: StateFlow<List<Theme>> get() = _themes
+
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> get() = _isLoading
 
     init {
         loadThemes()
@@ -25,8 +27,11 @@ class HomeScreenViewModel : ViewModel(), KoinComponent {
 
     private fun loadThemes() {
         viewModelScope.launch {
+            _isLoading.value = true
             val fetchedThemes = themeRepository.getPopularThemes()
             _themes.update { fetchedThemes }
+            _isLoading.value = false
         }
     }
 }
+
