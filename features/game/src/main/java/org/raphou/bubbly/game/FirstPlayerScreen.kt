@@ -16,6 +16,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import org.raphou.bubbly.domain.word.Word
 import org.raphou.bubbly.game.R.string.temps_coul
 import org.raphou.bubbly.game.R.string.temps_restant_secondes
@@ -23,7 +24,7 @@ import org.raphou.bubbly.game.R.string.voici_les_mots_faire_deviner
 import org.raphou.bubbly.ui.R
 
 @Composable
-fun FirstPlayerScreen() {
+fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
     val viewModel: FirstPlayerScreenViewModel = viewModel()
     val words by viewModel.words
 

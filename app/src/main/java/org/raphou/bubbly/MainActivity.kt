@@ -58,26 +58,23 @@ fun Content() {
         }
 
         composable(
-            "game/{lobbyId}/{isFirstPlayer}",
+            "game/{lobbyId}?isFirstPlayer={isFirstPlayer}",
             arguments = listOf(
                 navArgument("lobbyId") { type = NavType.StringType },
-                navArgument("isFirstPlayer") { type = NavType.BoolType }
+                navArgument("isFirstPlayer") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
             )
         ) { backStackEntry ->
             val lobbyId = backStackEntry.arguments?.getString("lobbyId").orEmpty()
             val isFirstPlayer = backStackEntry.arguments?.getBoolean("isFirstPlayer") ?: false
-            GameScreen(navController = navController, lobbyId = lobbyId, isFirstPlayer = isFirstPlayer)
-        }
 
-        composable(
-            "game/first-player",
-        ) {
-            FirstPlayerScreen()
-        }
-        composable(
-            "game/other-players",
-        ) {
-            OtherPlayerScreen()
+            if (isFirstPlayer) {
+                FirstPlayerScreen(navController = navController, lobbyId = lobbyId)
+            } else {
+                OtherPlayerScreen(navController = navController, lobbyId = lobbyId)
+            }
         }
     }
 }

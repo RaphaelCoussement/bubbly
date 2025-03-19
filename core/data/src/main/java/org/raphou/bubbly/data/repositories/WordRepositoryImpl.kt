@@ -7,6 +7,7 @@ import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
+import org.raphou.bubbly.domain.exceptions.WordException
 import org.raphou.bubbly.domain.word.Difficulty
 import org.raphou.bubbly.domain.word.IWordRepository
 import org.raphou.bubbly.domain.word.Word
@@ -22,18 +23,29 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
             val existingWords = wordsCollection.get().await()
             if (existingWords.isEmpty) {
                 val jsonString = loadJsonFromAssets("words.json")
-                val wordsData = parseWordsFromJson(jsonString)
 
-                wordsData.forEach { word ->
-                    val wordId = generateWordId(word) // génère un ID unique
-                    val wordWithId = word.copy(id = wordId)
-                    wordsCollection.document(wordWithId.id).set(wordWithId).await()
+                val wordsData = try {
+                    parseWordsFromJson(jsonString)
+                } catch (e: Exception) {
+                    Log.e("WordRepository", "Erreur lors du parsing du fichier JSON", e)
+                    throw WordException.WordParsingFailed("Erreur lors du parsing du fichier JSON.", e)
                 }
 
-                Log.d("WordRepository", "Collection 'words' créée avec succès.")
+                try {
+                    wordsData.forEach { word ->
+                        val wordId = generateWordId(word) // génère un ID unique
+                        val wordWithId = word.copy(id = wordId)
+                        wordsCollection.document(wordWithId.id).set(wordWithId).await()
+                    }
+                    Log.d("WordRepository", "Collection 'words' créée avec succès.")
+                } catch (e: Exception) {
+                    Log.e("WordRepository", "Erreur lors de l'insertion des mots dans Firestore", e)
+                    throw WordException.WordInsertionFailed("Erreur lors de l'insertion des mots dans Firestore.", e)
+                }
             }
         } catch (e: Exception) {
             Log.e("WordRepository", "Erreur lors de l'initialisation des mots", e)
+            throw WordException.WordInitializationFailed("Erreur lors de l'initialisation des mots.", e)
         }
     }
 
@@ -92,7 +104,7 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
             words
         } catch (e: Exception) {
             Log.e("WordRepository", "Erreur lors de la récupération des mots", e)
-            emptyList()
+            throw WordException.WordRetrievalFailed("Erreur lors de la récupération des mots depuis la base de données.", e)
         }
     }
 }

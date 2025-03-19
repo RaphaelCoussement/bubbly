@@ -3,10 +3,12 @@ package org.raphou.bubbly.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -25,8 +27,8 @@ class JoinLobbyScreenViewModel() : ViewModel(), KoinComponent {
     private val _players: MutableStateFlow<List<Player>> = MutableStateFlow(emptyList())
     val players: StateFlow<List<Player>> = _players.asStateFlow()
 
-    private val _navigateToGame = MutableStateFlow<String?>(null)
-    val navigateToGame: StateFlow<String?> = _navigateToGame.asStateFlow()
+    private val _navigateToGameChannel = Channel<String?>()
+    val navigateToGameChannel = _navigateToGameChannel.receiveAsFlow()
 
     fun joinLobby(code: String) {
         viewModelScope.launch {
@@ -47,20 +49,6 @@ class JoinLobbyScreenViewModel() : ViewModel(), KoinComponent {
         }
     }
 
-    fun monitorGameStart(code: String) {
-        viewModelScope.launch {
-            while (true) {
-                delay(5000) // Attente de 5 secondes
-                val updatedSession = lobbyRepository.getLobbyByCode(code) // Récupère les nouvelles infos
-                Log.d("JoinLobbyScreenVM", "Updated session: $updatedSession")
-                if (updatedSession.isStarted) {
-                    _navigateToGame.value = updatedSession.id.toString()
-                    break // On arrête la boucle une fois le jeu lancé
-                }
-            }
-        }
-    }
-
     fun listenForLobbyUpdates(lobbyId: String) {
         lobbyRepository.listenToLobbyUpdates(lobbyId) { updatedLobby ->
             _currentLobby.value = updatedLobby
@@ -68,10 +56,9 @@ class JoinLobbyScreenViewModel() : ViewModel(), KoinComponent {
 
             if (updatedLobby.isStarted) {
                 Log.d("JoinLobbyScreenVM", "youpi")
-                _navigateToGame.value = updatedLobby.id
+                // Envoie l'ID du lobby dans le channel
+                _navigateToGameChannel.trySend(updatedLobby.id)
             }
         }
     }
-
-
 }
