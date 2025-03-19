@@ -3,9 +3,11 @@ package org.raphou.bubbly.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -27,14 +29,15 @@ class CreateLobbyScreenViewModel() : ViewModel(), KoinComponent {
     private val _navigateToGame = MutableStateFlow<String?>(null)
     val navigateToGame: StateFlow<String?> = _navigateToGame
 
-    private val _isGameStarted = MutableStateFlow(false)
-    val isGameStarted: StateFlow<Boolean> = _isGameStarted
+    private val _gameStartedEvent = Channel<Unit>(Channel.CONFLATED)
+    val gameStartedEvent = _gameStartedEvent.receiveAsFlow()
 
     init {
         viewModelScope.launch {
-            // Observe the state of the game from LobbyStateManager
             LobbyStateManager.isGameStarted.collectLatest { started ->
-                _isGameStarted.value = started
+                if (started) {
+                    _gameStartedEvent.send(Unit)  // Envoie un événement quand le jeu démarre
+                }
             }
         }
     }
@@ -66,7 +69,7 @@ class CreateLobbyScreenViewModel() : ViewModel(), KoinComponent {
 
                 _players.value = currentPlayers
                 _navigateToGame.value = lobby.id
-                _isGameStarted.value = true
+                _gameStartedEvent.send(Unit)
             }
         }
     }

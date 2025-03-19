@@ -2,9 +2,11 @@ package org.raphou.bubbly.data.repositories
 
 import android.util.Log
 import com.google.firebase.Firebase
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
-import org.raphou.domain.models.Theme
+import org.raphou.bubbly.domain.exceptions.ThemeException
+import org.raphou.bubbly.domain.theme.Theme
 import org.raphou.domain.repositories.IThemeRepository
 
 class ThemeRepositoryImpl : IThemeRepository {
@@ -13,33 +15,41 @@ class ThemeRepositoryImpl : IThemeRepository {
 
     override suspend fun getPopularThemes(): List<Theme> {
         return try {
-            // Vérifier si la collection est vide
             val existingThemes = themesCollection.get().await()
             if (existingThemes.isEmpty) {
-                // Insérer les thèmes par défaut si la collection est vide
                 val defaultThemes = listOf(
-                    Theme("1", "Cinéma 🍿"),
-                    Theme("2", "Voyage ✈️"),
-                    Theme("3", "Musique 🎵"),
-                    Theme("4", "Jeux vidéo 🎮"),
-                    Theme("5", "Soirées rétro 🎉")
+                    Theme("1", "Culture Pop"),
+                    Theme("2", "Nourriture"),
+                    Theme("3", "Sport"),
+                    Theme("4", "Voyage"),
+                    Theme("5", "Objet")
                 )
 
-                defaultThemes.forEach { theme ->
-                    themesCollection.document(theme.id).set(theme).await()
+                try {
+                    defaultThemes.forEach { theme ->
+                        themesCollection.document(theme.id).set(theme).await()
+                    }
+                    Log.d("ThemeRepository", "Collection 'themes' créée avec succès.")
+                } catch (e: Exception) {
+                    Log.e("ThemeRepository", "Erreur lors de l'insertion des thèmes par défaut", e)
+                    throw ThemeException.DefaultThemesInsertionFailed("Erreur lors de l'insertion des thèmes par défaut.", e)
                 }
-
-                Log.d("ThemeRepository", "Collection 'themes' créée avec succès.")
             }
 
-            // Récupérer tous les thèmes depuis Firestore
             themesCollection.get().await().documents.mapNotNull { doc ->
                 doc.toObject(Theme::class.java)?.copy(id = doc.id)
             }
 
+        } catch (e: ThemeException.DefaultThemesInsertionFailed) {
+            Log.e("ThemeRepository", "Erreur d'insertion des thèmes par défaut", e)
+            throw e
+        } catch (e: FirebaseFirestoreException) {
+            Log.e("ThemeRepository", "Erreur lors de la récupération des thèmes depuis Firestore", e)
+            throw ThemeException.ThemeRetrievalFailed("Erreur lors de la récupération des thèmes depuis Firestore.", e)
         } catch (e: Exception) {
             Log.e("ThemeRepository", "Erreur lors de la récupération des thèmes", e)
-            emptyList()
+            throw ThemeException.ThemeRetrievalFailed("Erreur inconnue lors de la récupération des thèmes.", e)
         }
     }
+
 }

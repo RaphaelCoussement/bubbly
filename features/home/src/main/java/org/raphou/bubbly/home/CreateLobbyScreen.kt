@@ -20,26 +20,24 @@ import org.raphou.bubbly.ui.R
 fun CreateLobbyScreen(navController: NavHostController) {
     val viewModel: CreateLobbyScreenViewModel = viewModel()
     val lobby = viewModel.currentSession.collectAsState().value
-    val players = viewModel.players.collectAsState().value
-    val isGameStarted = viewModel.isGameStarted.collectAsState().value
+    val players by viewModel.players.collectAsState()
+    val gameStartedEvent = viewModel.gameStartedEvent.collectAsState(initial = null).value
+
+    LaunchedEffect(gameStartedEvent) {
+        gameStartedEvent?.let {
+            navController.navigate("game/${lobby?.id}?isFirstPlayer=true")
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.createLobby()
-    }
-
-    LaunchedEffect(isGameStarted) {
-        if (isGameStarted) {
-            navController.navigate("game/first-player")
-        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LobbyContent(lobby = lobby, onBack = { navController.popBackStack() }, players)
 
         FloatingActionButton(
-            onClick = {
-                viewModel.startGame()
-            },
+            onClick = { viewModel.startGame() },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(16.dp)
@@ -56,5 +54,6 @@ fun CreateLobbyScreen(navController: NavHostController) {
         }
     }
 }
+
 
 

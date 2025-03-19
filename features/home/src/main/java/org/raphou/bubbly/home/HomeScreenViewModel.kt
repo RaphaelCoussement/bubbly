@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import org.raphou.domain.models.Theme
+import org.raphou.bubbly.domain.theme.Theme
 import org.raphou.domain.repositories.IThemeRepository
 
 class HomeScreenViewModel : ViewModel(), KoinComponent {

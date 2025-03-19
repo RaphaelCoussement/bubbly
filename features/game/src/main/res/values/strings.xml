@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voici_les_mots_faire_deviner">Voici les mots à faire deviner</string>
+    <string name="temps_restant_secondes">Temps restant : %1$s secondes</string>
+    <string name="temps_coul">Temps écoulé</string>
+</resources>
