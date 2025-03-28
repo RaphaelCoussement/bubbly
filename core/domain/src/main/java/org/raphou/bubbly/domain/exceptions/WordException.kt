@@ -6,4 +6,5 @@ sealed class WordException(message: String, cause: Throwable? = null) : Exceptio
     class WordParsingFailed(message: String, cause: Throwable? = null) : WordException(message, cause)
     class WordInsertionFailed(message: String, cause: Throwable? = null) : WordException(message, cause)
     class WordRetrievalFailed(message: String, cause: Throwable? = null) : WordException(message, cause)
+    class WordLimitExceeded(message: String, cause: Throwable? = null) : WordException(message, cause)
 }
