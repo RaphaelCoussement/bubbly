@@ -22,6 +22,10 @@ class FirstPlayerScreenViewModel : ViewModel(), KoinComponent {
     private val _foundWords = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     val foundWords: StateFlow<Map<String, Boolean>> get() = _foundWords
 
+    private val _score = MutableStateFlow(0)
+    val score: StateFlow<Int> get() = _score
+
+
     fun fetchWords(lobbyId: String) {
         viewModelScope.launch {
             wordRepository.initializeWords()
@@ -41,6 +45,13 @@ class FirstPlayerScreenViewModel : ViewModel(), KoinComponent {
             _foundWords.value = statusMap.toMap()
         }
     }
+
+    fun fetchFinalScore(lobbyId: String) {
+        viewModelScope.launch {
+            _score.value = wordRepository.getTotalPoints(lobbyId)
+        }
+    }
+
 }
 
 

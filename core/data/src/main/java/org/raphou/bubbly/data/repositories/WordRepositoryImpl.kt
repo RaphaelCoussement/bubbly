@@ -306,4 +306,26 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
         return wordsQuery.documents.mapNotNull { it.getString("word") }
     }
 
+    override suspend fun getTotalPoints(lobbyId: String): Int {
+        var totalScore = 0
+        try {
+            val suggestionsQuery = playerSuggestionsCollection
+                .whereEqualTo("lobbyId", lobbyId)
+                .get()
+                .await()
+
+            for (document in suggestionsQuery.documents) {
+                val word = document.getString("word") ?: continue
+                val wordInfo = getWordInfo(lobbyId, word) ?: continue
+
+                if (wordInfo.isFound) {
+                    totalScore += wordInfo.points
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("getTotalPoints", "Erreur lors du calcul du score : ${e.message}")
+        }
+        return totalScore
+    }
+
 }

@@ -18,7 +18,7 @@ class ThemeRepositoryImpl : IThemeRepository {
             val existingThemes = themesCollection.get().await()
             if (existingThemes.isEmpty) {
                 val defaultThemes = listOf(
-                    Theme("1", "Culture Pop"),
+                    Theme("1", "Animaux"),
                     Theme("2", "Nourriture"),
                     Theme("3", "Sport"),
                     Theme("4", "Voyage"),

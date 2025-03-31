@@ -28,6 +28,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
     val viewModel: FirstPlayerScreenViewModel = viewModel()
     val words by viewModel.words
     val foundWords by viewModel.foundWords.collectAsState()
+    val score by viewModel.score.collectAsState()
 
     LaunchedEffect(foundWords) {
         println("Mots trouvés mis à jour : $foundWords")
@@ -55,6 +56,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
 
             override fun onFinish() {
                 timeLeft = 0
+                viewModel.fetchFinalScore(lobbyId)
             }
         }.start()
     }
@@ -94,11 +96,40 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxSize()
         ) {
+            item {
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = colorResource(id = R.color.orange_primary)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    if (timeLeft == 0) {
+                        Text(
+                            text = stringResource(
+                                org.raphou.bubbly.game.R.string.nombre_de_gorg_es_distribuer,
+                                score
+                            ),
+                            style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .align(Alignment.CenterHorizontally),
+                            color = colorResource(id = R.color.white)
+                        )
+                    }
+                }
+            }
+
+            // Liste des mots
             items(words.size) { index ->
                 val isFound = foundWords[words[index].name] ?: false
                 WordCard(word = words[index], index = index, isFound = isFound)
             }
         }
+
     }
 }
 
