@@ -27,18 +27,36 @@ import org.raphou.bubbly.ui.R
 fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
     val viewModel: FirstPlayerScreenViewModel = viewModel()
     val words by viewModel.words
+    val foundWords by viewModel.foundWords.collectAsState()
+    val score by viewModel.score.collectAsState()
+
+    LaunchedEffect(foundWords) {
+        println("Mots trouvés mis à jour : $foundWords")
+    }
+
+    LaunchedEffect(lobbyId) {
+        viewModel.fetchWords(lobbyId)
+    }
+
+    LaunchedEffect(lobbyId) {
+        while (true) {
+            viewModel.checkWordStatus(lobbyId)
+            kotlinx.coroutines.delay(2000) // Vérifie toutes les 2 secondes
+        }
+    }
 
     // Timer
     var timeLeft by remember { mutableStateOf(30) }
 
     LaunchedEffect(Unit) {
-        object : CountDownTimer(30_000, 1_000) {
+        object : CountDownTimer(50_000, 1_000) {
             override fun onTick(millisUntilFinished: Long) {
                 timeLeft = (millisUntilFinished / 1_000).toInt()
             }
 
             override fun onFinish() {
                 timeLeft = 0
+                viewModel.fetchFinalScore(lobbyId)
             }
         }.start()
     }
@@ -55,7 +73,6 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
                 .padding(16.dp)
                 .align(Alignment.CenterHorizontally),
             color = colorResource(id = R.color.orange_primary),
-
         )
 
         // Display timer
@@ -79,16 +96,50 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxSize()
         ) {
+            item {
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = colorResource(id = R.color.orange_primary)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    if (timeLeft == 0) {
+                        Text(
+                            text = stringResource(
+                                org.raphou.bubbly.game.R.string.nombre_de_gorg_es_distribuer,
+                                score
+                            ),
+                            style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .align(Alignment.CenterHorizontally),
+                            color = colorResource(id = R.color.white)
+                        )
+                    }
+                }
+            }
+
+            // Liste des mots
             items(words.size) { index ->
-                WordCard(word = words[index], index = index)
+                val isFound = foundWords[words[index].name] ?: false
+                WordCard(word = words[index], index = index, isFound = isFound)
             }
         }
+
     }
 }
 
+
 @Composable
-fun WordCard(word: Word, index: Int) {
-    val isEven = index % 2 == 0
+fun WordCard(word: Word, index: Int, isFound: Boolean) {
+    val backgroundColor = if (isFound) Color.Gray.copy(alpha = 0.5f) else {
+        if (index % 2 == 0) colorResource(id = R.color.orange_primary) else Color.White
+    }
+    val textColor = if (isFound) Color.DarkGray else if (index % 2 == 0) Color.White else Color(0xFF4A4A4A)
 
     Card(
         modifier = Modifier
@@ -96,9 +147,7 @@ fun WordCard(word: Word, index: Int) {
             .padding(4.dp),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isEven) colorResource(id = R.color.orange_primary) else Color.White // Alternating colors
-        )
+        colors = CardDefaults.cardColors(containerColor = backgroundColor)
     ) {
         Row(
             modifier = Modifier
@@ -110,23 +159,15 @@ fun WordCard(word: Word, index: Int) {
                 text = word.name,
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.weight(1f),
-                color = if (isEven) Color.White else Color(0xFF4A4A4A) // White text on orange, dark text on white
+                color = textColor
             )
             Text(
                 text = word.difficulty.name,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (isEven) Color.White else Color(0xFF4A4A4A) // White text on orange, dark text on white
+                color = textColor
             )
         }
     }
 }
 
-@Composable
-fun getDifficultyColor(difficulty: org.raphou.bubbly.domain.word.Difficulty): Color {
-    return when (difficulty) {
-        org.raphou.bubbly.domain.word.Difficulty.FACILE -> colorResource(id = R.color.orange_primary)
-        org.raphou.bubbly.domain.word.Difficulty.MOYEN -> colorResource(id = R.color.beige_background)
-        org.raphou.bubbly.domain.word.Difficulty.DIFFICILE -> colorResource(id = R.color.orange_primary)
-        org.raphou.bubbly.domain.word.Difficulty.EXTREME -> colorResource(id = R.color.beige_background)
-    }
-}
+

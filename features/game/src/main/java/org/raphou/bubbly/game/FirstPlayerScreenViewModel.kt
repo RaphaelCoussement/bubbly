@@ -19,11 +19,39 @@ class FirstPlayerScreenViewModel : ViewModel(), KoinComponent {
     private val _words = mutableStateOf<List<Word>>(emptyList())
     val words: State<List<Word>> get() = _words
 
-    init {
+    private val _foundWords = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val foundWords: StateFlow<Map<String, Boolean>> get() = _foundWords
+
+    private val _score = MutableStateFlow(0)
+    val score: StateFlow<Int> get() = _score
+
+
+    fun fetchWords(lobbyId: String) {
         viewModelScope.launch {
             wordRepository.initializeWords()
-            _words.value = wordRepository.getRandomWords(null)
+            val selectedWords = wordRepository.getRandomWords(null, lobbyId)
+            _words.value = selectedWords
+            checkWordStatus(lobbyId)
         }
     }
+
+    fun checkWordStatus(lobbyId: String) {
+        viewModelScope.launch {
+            val statusMap = mutableMapOf<String, Boolean>()
+            _words.value.forEach { word ->
+                val wordInfo = wordRepository.getWordInfo(lobbyId, word.name)
+                statusMap[word.name] = wordInfo?.isFound ?: false
+            }
+            _foundWords.value = statusMap.toMap()
+        }
+    }
+
+    fun fetchFinalScore(lobbyId: String) {
+        viewModelScope.launch {
+            _score.value = wordRepository.getTotalPoints(lobbyId)
+        }
+    }
+
 }
+
 

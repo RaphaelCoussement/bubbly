@@ -3,4 +3,11 @@
     <string name="voici_les_mots_faire_deviner">Voici les mots à faire deviner</string>
     <string name="temps_restant_secondes">Temps restant : %1$s secondes</string>
     <string name="temps_coul">Temps écoulé</string>
+    <string name="sugg_rer_un_mot">Suggérer un mot</string>
+    <string name="temps_restant_s">Temps restant : %1$s s</string>
+    <string name="suggestions_de_mots">Suggestions de mots</string>
+    <string name="soumettre_la_suggestion">Soumettre la suggestion</string>
+    <string name="votre_score">Votre score : %1$s</string>
+    <string name="mots_trouver">Mots à trouver :</string>
+    <string name="nombre_de_gorg_es_distribuer">Gorgées à distribuer : %1$s</string>
 </resources>
