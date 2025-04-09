@@ -8,10 +8,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.raphou.bubbly.domain.home.IUserPreferencesRepository
 import org.raphou.bubbly.domain.theme.Theme
 import org.raphou.domain.repositories.IThemeRepository
 
 class HomeScreenViewModel : ViewModel(), KoinComponent {
+
+    private val userPreferencesRepository: IUserPreferencesRepository by inject()
 
     private val themeRepository: IThemeRepository by inject()
 
@@ -31,6 +34,11 @@ class HomeScreenViewModel : ViewModel(), KoinComponent {
             val fetchedThemes = themeRepository.getPopularThemes()
             _themes.update { fetchedThemes }
             _isLoading.value = false
+        }
+    }
+    fun logout() {
+        viewModelScope.launch {
+            userPreferencesRepository.clearPseudo()
         }
     }
 }

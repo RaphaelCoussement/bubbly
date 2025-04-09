@@ -1,5 +1,8 @@
 package org.raphou.bubbly.home
 
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,6 +17,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +37,7 @@ import androidx.navigation.NavHostController
 import org.raphou.bubbly.home.R.string.*
 import org.raphou.bubbly.ui.R.*
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +48,16 @@ fun HomeScreen(navController: NavHostController) {
     val themes by viewModel.themes.collectAsState()
 
     val isLoading by viewModel.isLoading.collectAsState()
+
+    val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val content = result.data?.getStringExtra("QR_RESULT")
+        content?.let {
+            navController.navigate(it)
+        }
+    }
 
     // variable mutable pour l'input du code
     var code by remember { mutableStateOf("") }
@@ -83,12 +98,26 @@ fun HomeScreen(navController: NavHostController) {
                             color = Color.Black,
                         )
                     }
-                    IconButton(onClick = { navController.navigate("rules") }) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = stringResource(info),
-                            tint = colorResource(id = color.orange_primary)
-                        )
+                    Row {
+                        IconButton(onClick = {
+                            viewModel.logout()
+                            navController.navigate("choosePseudo") {
+                                popUpTo("home") { inclusive = true }
+                            }
+                        }) {
+                            Image(
+                                painter = painterResource(id = drawable.baseline_logout_24),
+                                contentDescription = "Déconnexion",
+                            )
+                        }
+
+                        IconButton(onClick = { navController.navigate("rules") }) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = stringResource(info),
+                                tint = colorResource(id = color.orange_primary)
+                            )
+                        }
                     }
                 }
 
@@ -120,7 +149,10 @@ fun HomeScreen(navController: NavHostController) {
                             unfocusedIndicatorColor = Color.Transparent
                         )
                     )
-                    IconButton(onClick = { /* Action QR Code */ }) {
+                    IconButton(onClick = {
+                        val intent = Intent(context, QRCodeScannerActivity::class.java)
+                        launcher.launch(intent)
+                    }) {
                         Image(
                             painter = painterResource(id = drawable.baseline_qr_code_scanner_24),
                             contentDescription = stringResource(qr_code_scanner_icon),

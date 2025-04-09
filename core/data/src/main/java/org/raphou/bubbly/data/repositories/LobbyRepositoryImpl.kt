@@ -11,6 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import org.raphou.bubbly.domain.exceptions.LobbyException
+import org.raphou.bubbly.domain.home.IUserPreferencesRepository
 import org.raphou.bubbly.domain.lobby.ILobbyRepository
 import org.raphou.bubbly.domain.lobby.Lobby
 import org.raphou.bubbly.domain.lobby.Player
@@ -22,6 +23,52 @@ class LobbyRepositoryImpl : ILobbyRepository {
     private val lobbiesCollection = db.collection("lobbies")
     private val playersCollection = db.collection("players")
     private val lobbyPlayersCollection = db.collection("lobby_players")
+
+    override suspend fun getPlayer(pseudo: String): Player {
+        // Recherche le joueur par son pseudo
+        val querySnapshot = playersCollection.whereEqualTo("name", pseudo).get().await()
+
+        // Vérifier si un joueur avec ce pseudo existe
+        if (querySnapshot.isEmpty) {
+            throw Exception("Aucun joueur trouvé avec ce pseudo")
+        }
+
+        // Récupérer le premier joueur correspondant
+        val playerDocument = querySnapshot.documents.first()
+        return playerDocument.toObject(Player::class.java) ?: throw Exception("Erreur de conversion du joueur")
+    }
+
+    override suspend fun addPlayer(pseudo: String): Player {
+        // Vérifier si le pseudo existe déjà
+        if (isPseudoExisting(pseudo)) {
+            throw Exception("Le pseudo est déjà pris")
+        }
+
+        val player = Player(
+            id = UUID.randomUUID().toString(), // Générer un ID unique pour le joueur
+            name = pseudo
+        )
+
+        // Ajoute le joueur à la collection "players"
+        playersCollection.document(player.id).set(player)
+
+        return player
+    }
+
+    override suspend fun isPseudoExisting(pseudo: String): Boolean {
+        return try {
+            val querySnapshot = playersCollection
+                .whereEqualTo("name", pseudo)
+                .get()
+                .await()
+
+            querySnapshot.isEmpty.not()
+        } catch (e: Exception) {
+            Log.e("FirestoreError", "Erreur lors de la vérification du pseudo: ${e.message}")
+            false
+        }
+    }
+
 
     override suspend fun getLobby(lobbyId: String): Lobby {
         return try {
@@ -43,7 +90,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
             } while (!existingLobbies.isEmpty) // Vérifie que le code n'est pas déjà utilisé
 
             val lobbyId = UUID.randomUUID().toString()
-            val lobby = Lobby(id = lobbyId, code = code, players = emptyList(), isCreator = true, isStarted = false)
+            val lobby = Lobby(id = lobbyId, code = code, players = emptyList(), isStarted = false)
             lobbiesCollection.document(lobbyId).set(lobby).await()
 
             lobby
@@ -53,23 +100,34 @@ class LobbyRepositoryImpl : ILobbyRepository {
         }
     }
 
-
-    override suspend fun joinLobby(code: String): Lobby {
+    override suspend fun joinLobby(code: String, pseudo : String): Lobby {
         return try {
+            // Recherche du lobby avec le code
             val querySnapshot = lobbiesCollection.whereEqualTo("code", code).get().await()
             if (querySnapshot.isEmpty) {
                 throw LobbyException.LobbyNotFound("Aucun lobby trouvé avec le code $code")
             }
 
+            // Récupération du lobby
             val lobbyDoc = querySnapshot.documents.first()
             val lobby = lobbyDoc.toObject(Lobby::class.java)?.copy(id = lobbyDoc.id)
                 ?: throw LobbyException.InvalidLobby("Lobby avec le code $code est invalide.")
 
-            val player = Player(id = UUID.randomUUID().toString(), name = "Nouveau Joueur")
-            playersCollection.document(player.id).set(player).await()
+            // Récupère le pseudo enregistré sur le téléphone
+            val pseudo = pseudo
 
+            // Récupérer le player correspondant au pseudo dans Firebase
+            val playerQuerySnapshot = playersCollection.whereEqualTo("name", pseudo).get().await()
+            val player = if (playerQuerySnapshot != null && playerQuerySnapshot.documents.isNotEmpty()) {
+                val playerDoc = playerQuerySnapshot.documents.first()
+                playerDoc.toObject(Player::class.java)?.copy(id = playerDoc.id)
+                    ?: throw LobbyException.InvalidPlayer("Le joueur avec le pseudo $pseudo est invalide.")
+            } else {
+                throw LobbyException.PlayerNotFound("Aucun joueur trouvé avec le pseudo $pseudo")
+            }
+
+            // Associer le joueur au lobby dans la collection 'lobby_players'
             try {
-                // Associe le joueur au lobby dans la collection 'lobby_players'
                 val lobbyPlayerData = mapOf(
                     "lobbyId" to lobby.id,
                     "playerId" to player.id
@@ -90,6 +148,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
             throw e
         }
     }
+
 
     override fun listenToLobbyPlayers(lobbyId: String, onUpdate: (List<Player>) -> Unit) {
         GlobalScope.launch(Dispatchers.Main) {
@@ -129,11 +188,8 @@ class LobbyRepositoryImpl : ILobbyRepository {
         }
     }
 
-
     override suspend fun addPlayerToLobby(lobbyId: String, player: Player) {
         try {
-            playersCollection.document(player.id).set(player).await()
-
             lobbyPlayersCollection.add(mapOf("lobbyId" to lobbyId, "playerId" to player.id)).await()
 
         } catch (e: FirebaseFirestoreException) {

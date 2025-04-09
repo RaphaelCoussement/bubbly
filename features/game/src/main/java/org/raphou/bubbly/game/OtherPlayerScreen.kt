@@ -32,7 +32,7 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
     val score by viewModel.score
     val suggestionInput = remember { mutableStateOf(TextFieldValue()) }
 
-    val totalTime = 50
+    val totalTime = 30
     var timeLeft by remember { mutableStateOf(totalTime) }
 
     LaunchedEffect(Unit) {
@@ -45,7 +45,7 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
 
     LaunchedEffect(isTimeUp) {
         if (isTimeUp) {
-            viewModel.resetGame(lobbyId, "57eee731-2123-498c-a01b-d60bd81f89f0")
+            viewModel.resetGame(lobbyId)
         }
     }
 
@@ -93,7 +93,7 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
             Button(
                 onClick = {
                     if (suggestionInput.value.text.isNotEmpty() && suggestions.size < 10) {
-                        viewModel.addPlayerSuggestion(lobbyId, "57eee731-2123-498c-a01b-d60bd81f89f0", suggestionInput.value.text.trim())
+                        viewModel.addPlayerSuggestion(lobbyId, suggestionInput.value.text.trim())
                         suggestionInput.value = TextFieldValue("")
                     } else {
                         Toast.makeText(

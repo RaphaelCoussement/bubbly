@@ -21,6 +21,7 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
     private val wordsCollection = db.collection("words")
     private val playerSuggestionsCollection = db.collection("player_suggestions")
     private val wordsSelectedCollection = db.collection("words_selected")
+    private val playersCollection = db.collection("players")
 
     override suspend fun initializeWords() {
         try {
@@ -253,10 +254,27 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
     }
 
     override suspend fun calculatePlayerScore(lobbyId: String, playerId: String): Int {
-
         var totalScore = 0
+
+        // Récupérer les suggestions pour le lobby
         val suggestionsQuery = playerSuggestionsCollection.whereEqualTo("lobbyId", lobbyId).get().await()
 
+        // Récupérer le document du joueur dans la collection "players"
+        val playerDocument = playersCollection.document(playerId).get().await()
+
+        // Vérifier si le joueur existe dans la base de données
+        if (!playerDocument.exists()) {
+            Log.e("calculatePlayerScore", "Erreur: joueur non trouvé avec id $playerId")
+            return totalScore
+        }
+
+        // Récupérer les points déjà enregistrés dans la base de données
+        val playerPoints = playerDocument.getLong("points")?.toInt() ?: 0
+        Log.e("playerPoints", "playerPoints $playerPoints")
+        totalScore = playerPoints // Initialiser totalScore avec les points en base
+        Log.e("playerPoints", "totalScore $totalScore")
+
+        // Parcourir les suggestions et calculer le score de la partie
         for (document in suggestionsQuery.documents) {
             val suggestionPlayerId = document.getString("playerId")
             if (suggestionPlayerId == null) {
@@ -280,10 +298,17 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
 
             Log.d("suggestionPlayerId", "wordInfo: ${wordInfo.word}")
 
+            // Ajouter les points de la suggestion si le mot est trouvé
             if (wordInfo.isFound) {
                 totalScore += wordInfo.points
             }
         }
+
+        Log.e("playerPoints", "new totalScore $totalScore")
+
+        // Mettre à jour le score du joueur dans la base de données
+        playersCollection.document(playerId).update("points", totalScore).await()
+
         return totalScore
     }
 
@@ -291,14 +316,7 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
 
         // Récupére et affiche les 4 mots qu'il fallait trouver
         val wordsQuery = wordsSelectedCollection.whereEqualTo("lobbyId", lobbyId).get().await()
-        val wordsToFind = wordsQuery.documents.mapNotNull { it.getString("word") }
-
-        Log.d("resetGame", "Appel de calculatePlayerScore avec lobbyId: $lobbyId, playerId: $playerId")
-
-        // Calcul du score
-        val scores = calculatePlayerScore(lobbyId, playerId)
-
-        Log.d("WordRepository", "Fin de manche - Mots: $wordsToFind, Scores: $scores")
+        wordsQuery.documents.mapNotNull { it.getString("word") }
     }
 
     override suspend fun getWordsToFind(lobbyId: String): List<String> {

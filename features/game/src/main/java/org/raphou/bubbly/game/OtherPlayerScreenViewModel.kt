@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.raphou.bubbly.domain.home.IUserPreferencesRepository
+import org.raphou.bubbly.domain.lobby.ILobbyRepository
 import org.raphou.bubbly.domain.word.IWordRepository
 import org.raphou.bubbly.domain.word.Word
 import org.raphou.bubbly.domain.word.WordSelected
@@ -14,6 +16,8 @@ import java.lang.Exception
 class OtherPlayerScreenViewModel : ViewModel(), KoinComponent {
 
     private val wordRepository: IWordRepository by inject()
+    private val userPreferencesRepository: IUserPreferencesRepository by inject()
+    private val lobbyRepository: ILobbyRepository by inject()
 
     private val _suggestions = mutableStateOf<List<String>>(emptyList())
     val suggestions: State<List<String>> = _suggestions
@@ -30,14 +34,18 @@ class OtherPlayerScreenViewModel : ViewModel(), KoinComponent {
     private val _wordsToFind = mutableStateOf<List<String>>(emptyList())
     val wordsToFind: State<List<String>> = _wordsToFind
 
-    fun addPlayerSuggestion(lobbyId: String, playerId: String, suggestedWord: String) {
+    fun addPlayerSuggestion(lobbyId: String, suggestedWord: String) {
         viewModelScope.launch {
             try {
                 if (_remainingSuggestions.value > 0) {
-                    Log.d("OtherPlayerScreenViewModel", "Adding word: $suggestedWord")
-                    wordRepository.addPlayerSuggestion(lobbyId, playerId, suggestedWord)
-                    _suggestions.value = _suggestions.value + suggestedWord
-                    _remainingSuggestions.value -= 1
+                    val pseudo = userPreferencesRepository.getPseudo()
+                    if (pseudo != null){
+                        val player = lobbyRepository.getPlayer(pseudo)
+                        Log.d("OtherPlayerScreenViewModel", "Adding word: $suggestedWord")
+                        wordRepository.addPlayerSuggestion(lobbyId, player.id, suggestedWord)
+                        _suggestions.value = _suggestions.value + suggestedWord
+                        _remainingSuggestions.value -= 1
+                    }
                     Log.d("OtherPlayerScreenViewModel", "Remaining suggestions: ${_remainingSuggestions.value}")
                 } else {
                     Log.d("OtherPlayerScreenViewModel", "No remaining suggestions.")
@@ -53,19 +61,28 @@ class OtherPlayerScreenViewModel : ViewModel(), KoinComponent {
         _isTimeUp.value = true
     }
 
-    fun resetGame(lobbyId: String, playerId: String) {
+    fun resetGame(lobbyId: String) {
         viewModelScope.launch {
             try {
-                wordRepository.resetGame(lobbyId, playerId)
-                _suggestions.value = emptyList()
-                val finalScore = wordRepository.calculatePlayerScore(lobbyId, playerId)
-                _score.value = finalScore
-                val wordsToFindList = wordRepository.getWordsToFind(lobbyId)
-                _wordsToFind.value = wordsToFindList
-                _isTimeUp.value = true
+                val pseudo = userPreferencesRepository.getPseudo()
+                if (pseudo != null) {
+                    val player = lobbyRepository.getPlayer(pseudo)
+                    wordRepository.resetGame(lobbyId, player.id)
+                    _suggestions.value = emptyList()
+                    wordRepository.calculatePlayerScore(lobbyId, player.id)
+                    fetchFinalScore(lobbyId)
+                    val wordsToFindList = wordRepository.getWordsToFind(lobbyId)
+                    _wordsToFind.value = wordsToFindList
+                    _isTimeUp.value = true
+                }
             } catch (e: Exception) {
                 Log.e("OtherPlayerScreenViewModel", "Error resetting game: ${e.message}")
             }
+        }
+    }
+    fun fetchFinalScore(lobbyId: String) {
+        viewModelScope.launch {
+            _score.value = wordRepository.getTotalPoints(lobbyId)
         }
     }
 }

@@ -49,7 +49,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
     var timeLeft by remember { mutableStateOf(30) }
 
     LaunchedEffect(Unit) {
-        object : CountDownTimer(50_000, 1_000) {
+        object : CountDownTimer(30_000, 1_000) {
             override fun onTick(millisUntilFinished: Long) {
                 timeLeft = (millisUntilFinished / 1_000).toInt()
             }

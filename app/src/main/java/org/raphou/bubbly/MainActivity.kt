@@ -12,11 +12,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import org.raphou.bubbly.game.FirstPlayerScreen
 import org.raphou.bubbly.game.OtherPlayerScreen
+import org.raphou.bubbly.home.ChoosePseudoScreen
 import org.raphou.bubbly.home.CreateLobbyScreen
 import org.raphou.bubbly.home.GameScreen
 import org.raphou.bubbly.home.HomeScreen
 import org.raphou.bubbly.home.JoinLobbyScreen
 import org.raphou.bubbly.home.RulesScreen
+import org.raphou.bubbly.home.SplashScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -36,8 +38,14 @@ fun Content() {
 
     NavHost(
         navController = navController,
-        startDestination = "home"
+        startDestination = "splash"
     ) {
+        composable("splash") {
+            SplashScreen(navController)
+        }
+        composable("choosePseudo") {
+            ChoosePseudoScreen(navController)
+        }
         composable("home") {
             HomeScreen(navController = navController)
         }

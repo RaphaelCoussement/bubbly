@@ -1,5 +1,10 @@
 package org.raphou.bubbly.home
 
+import android.graphics.Bitmap
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,13 +13,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.MultiFormatWriter
+import com.google.zxing.common.BitMatrix
 import org.raphou.bubbly.domain.lobby.Lobby
 import org.raphou.bubbly.domain.lobby.Player
 import org.raphou.bubbly.home.R.*
@@ -23,6 +38,9 @@ import org.raphou.bubbly.ui.R
 
 @Composable
 fun LobbyContent(lobby: Lobby?, onBack: () -> Unit, players: List<Player>) {
+    var showQRCode by remember { mutableStateOf(false) }
+    val qrCodeSize by animateDpAsState(targetValue = if (showQRCode) 200.dp else 0.dp) // Animation du QR Code
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -43,6 +61,7 @@ fun LobbyContent(lobby: Lobby?, onBack: () -> Unit, players: List<Player>) {
                 )
             }
 
+            // Section Code de Session avec l'icône pour afficher/cacher le QR Code
             Text(
                 text = "Code de session: ${lobby?.code ?: "Chargement..."}",
                 style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
@@ -51,6 +70,31 @@ fun LobbyContent(lobby: Lobby?, onBack: () -> Unit, players: List<Player>) {
                     .padding(bottom = 16.dp)
                     .align(Alignment.CenterHorizontally)
             )
+
+            // Icône QR Code en haut à droite
+            IconButton(
+                onClick = { showQRCode = !showQRCode },
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_qr_code_scanner_24),
+                    contentDescription = stringResource(id = org.raphou.bubbly.home.R.string.qr_code_scanner_icon),
+                    tint = colorResource(id = R.color.orange_primary)
+                )
+            }
+
+            // Animation et affichage du QR Code
+            AnimatedVisibility(visible = showQRCode) {
+                Image(
+                    bitmap = generateQRCode("joinLobby/${lobby?.code}"),
+                    contentDescription = "QR Code",
+                    modifier = Modifier
+                        .size(qrCodeSize)
+                        .align(Alignment.CenterHorizontally)
+                        .animateContentSize()
+                )
+            }
 
             Text(
                 text = "Participants",
@@ -101,5 +145,19 @@ fun LobbyContent(lobby: Lobby?, onBack: () -> Unit, players: List<Player>) {
             }
         }
     }
+}
+
+fun generateQRCode(content: String, size: Int = 512): ImageBitmap {
+    val bitMatrix: BitMatrix = MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, size, size)
+    val width = bitMatrix.width
+    val height = bitMatrix.height
+    val pixels = IntArray(width * height) { i ->
+        val x = i % width
+        val y = i / width
+        if (bitMatrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+    }
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
+    return bitmap.asImageBitmap()
 }
 
