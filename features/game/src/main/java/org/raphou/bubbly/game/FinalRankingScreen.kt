@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -44,7 +45,7 @@ fun FinalRankingScreen(navController: NavController, lobbyId: String) {
             .padding(16.dp)
     ) {
         Text(
-            text = "Classement Final",
+            text = stringResource(R.string.classement_final),
             style = MaterialTheme.typography.headlineLarge,
             color = colorResource(id = orange_primary),
             modifier = Modifier.align(Alignment.CenterHorizontally)

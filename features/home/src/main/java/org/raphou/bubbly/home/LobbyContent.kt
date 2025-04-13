@@ -79,7 +79,7 @@ fun LobbyContent(lobby: Lobby?, onBack: () -> Unit, players: List<Player>) {
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_qr_code_scanner_24),
-                    contentDescription = stringResource(id = org.raphou.bubbly.home.R.string.qr_code_scanner_icon),
+                    contentDescription = stringResource(id = qr_code_scanner_icon),
                     tint = colorResource(id = R.color.orange_primary)
                 )
             }
@@ -97,7 +97,7 @@ fun LobbyContent(lobby: Lobby?, onBack: () -> Unit, players: List<Player>) {
             }
 
             Text(
-                text = "Participants",
+                text = stringResource(participantss),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = Color.Black,
                 modifier = Modifier.padding(bottom = 8.dp)

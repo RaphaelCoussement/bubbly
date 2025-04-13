@@ -39,7 +39,7 @@ fun GameScreen(navController: NavController, lobbyId: String) {
             OtherPlayerScreen(navController = navController, lobbyId = lobbyId)
         }
         is GameScreenState.Finish -> {
-            // Redirection vers final ranking
+            // Redirection vers le classement final
             LaunchedEffect(Unit) {
                 navController.navigate("game/$lobbyId/final-ranking")
             }

@@ -13,4 +13,7 @@
     <string name="chargement">Chargement...</string>
     <string name="participants">Participants:</string>
     <string name="aucun_participant">Aucun participant</string>
+    <string name="choisis_ton_pseudo">Choisis ton pseudo !</string>
+    <string name="pseudo_vide_ou_d_j_pris">Pseudo vide ou déjà pris</string>
+    <string name="participantss">Participants</string>
 </resources>

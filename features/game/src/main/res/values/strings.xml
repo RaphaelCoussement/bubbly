@@ -10,4 +10,6 @@
     <string name="votre_score">Votre score : %1$s</string>
     <string name="mots_trouver">Mots à trouver :</string>
     <string name="nombre_de_gorg_es_distribuer">Gorgées à distribuer : %1$s</string>
+    <string name="classement_final">Classement Final</string>
+    <string name="classement">Classement</string>
 </resources>

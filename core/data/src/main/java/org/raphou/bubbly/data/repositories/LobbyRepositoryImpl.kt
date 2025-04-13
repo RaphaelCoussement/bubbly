@@ -334,7 +334,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
         val lobbySnap = lobbyRef.get().await()
         val lobby = lobbySnap.toObject(Lobby::class.java) ?: throw Exception("Lobby not found")
 
-        // Vérifier si tous les joueurs ont été désignés comme premier joueur
+        // Vérifie si tous les joueurs ont été désignés comme premier joueur
         val lobbyPlayersSnapshot = lobbyPlayersCollection
             .whereEqualTo("lobbyId", lobbyId)
             .get()
@@ -345,7 +345,6 @@ class LobbyRepositoryImpl : ILobbyRepository {
 
         if (playersThatHaveBeenFirstPlayer == playersCount) {
             if (!lobby.isLastTurnInProgress) {
-                // On commence le dernier tour pour le dernier joueur
                 lobbyRef.update("isLastTurnInProgress", true).await()
                 return currentPlayerName // on laisse le joueur courant jouer son dernier tour
             } else {
@@ -354,7 +353,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
             }
         }
 
-        // Récupérer les joueurs dans la collection des joueurs
+        // Récupère les joueurs dans la collection des joueurs
         val playerIds = lobbyPlayersSnapshot.documents.mapNotNull { it.getString("playerId") }
 
         if (playerIds.isEmpty()) throw Exception("No players found for this lobby")
@@ -369,49 +368,45 @@ class LobbyRepositoryImpl : ILobbyRepository {
         val allHaveBeenFirstPlayer = allPlayers.all { it.isFirstPlayer }
 
         if (allHaveBeenFirstPlayer) {
-            // Marquer le lobby comme terminé
             lobbyRef.update("isAllFirstPlayer", true).await()
             return "final ranking"
         }
 
-        // Si la partie n'est pas terminée, procéder à l'assignation d'un nouveau premier joueur
+        // Si la partie n'est pas terminée, on procède à l'assignation d'un nouveau premier joueur
         return suspendCoroutine { continuation ->
             db.runTransaction { transaction ->
                 val lobbySnap = transaction.get(lobbyRef)
                 val lobby = lobbySnap.toObject(Lobby::class.java) ?: throw Exception("Lobby not found")
 
-                // Si un premier joueur est déjà assigné, on renvoie le nom du joueur actuel
                 if (lobby.isFirstPlayerAssigned) {
                     val playerSnap = transaction.get(playersCollection.document(lobby.firstPlayerId))
                     val player = playerSnap.toObject(Player::class.java) ?: throw Exception("Player not found")
                     return@runTransaction player.name
                 }
 
-                // Récupérer tous les joueurs
+                // Récupère tous les joueurs
                 val players = playerIds.mapNotNull { id ->
                     val snap = transaction.get(playersCollection.document(id))
                     snap.toObject(Player::class.java)?.copy(id = id)
                 }
 
-                // Filtrer les joueurs qui ne sont pas encore passés premiers joueurs
+                // Filtre les joueurs qui ne sont pas encore passés premiers joueurs
                 val availablePlayers = players.filter { !it.isFirstPlayer && !lobby.firstPlayersIds.contains(it.id) }
 
                 if (availablePlayers.isEmpty()) {
-                    // Si tous les joueurs ont été assignés, finir la partie
                     return@runTransaction "final ranking" // ce cas ne devrait pas arriver normalement
                 }
 
-                // Sélectionner un joueur aléatoire parmi les joueurs disponibles
+                // Sélectionne un joueur aléatoire parmi les joueurs disponibles
                 val selected = availablePlayers.random()
 
-                // Ajouter le joueur sélectionné à la liste des joueurs passés premiers
+                // Ajoute le joueur sélectionné à la liste des joueurs passés premiers
                 transaction.update(lobbyRef, mapOf(
                     "firstPlayerId" to selected.id,
                     "isFirstPlayerAssigned" to true,
                     "firstPlayersIds" to FieldValue.arrayUnion(selected.id)
                 ))
 
-                // Mettre à jour le joueur sélectionné comme premier joueur
                 transaction.update(playersCollection.document(selected.id), mapOf(
                     "isFirstPlayer" to true
                 ))

@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import org.raphou.bubbly.domain.word.Word
+import org.raphou.bubbly.game.R.*
 import org.raphou.bubbly.game.R.string.temps_coul
 import org.raphou.bubbly.game.R.string.temps_restant_secondes
 import org.raphou.bubbly.game.R.string.voici_les_mots_faire_deviner
@@ -110,7 +111,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
                     if (timeLeft == 0) {
                         Text(
                             text = stringResource(
-                                org.raphou.bubbly.game.R.string.nombre_de_gorg_es_distribuer,
+                                string.nombre_de_gorg_es_distribuer,
                                 score
                             ),
                             style = MaterialTheme.typography.headlineMedium,

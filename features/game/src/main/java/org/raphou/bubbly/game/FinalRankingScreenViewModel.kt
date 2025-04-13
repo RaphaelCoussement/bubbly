@@ -12,7 +12,6 @@ import org.raphou.bubbly.domain.word.IWordRepository
 
 class FinalRankingScreenViewModel : ViewModel(), KoinComponent {
     private val lobbyRepository: ILobbyRepository by inject()
-    private val wordRepository: IWordRepository by inject()
 
     private val _ranking = mutableStateOf<List<Pair<String, Int>>>(emptyList())
     val ranking: State<List<Pair<String, Int>>> get() = _ranking
@@ -20,14 +19,6 @@ class FinalRankingScreenViewModel : ViewModel(), KoinComponent {
     fun fetchRanking(lobbyId: String) {
         viewModelScope.launch {
             _ranking.value = lobbyRepository.getPlayersRanking(lobbyId)
-        }
-    }
-
-    fun resetLobbyAfterRanking(lobbyId: String) {
-        viewModelScope.launch {
-            lobbyRepository.resetLobby(lobbyId)
-            wordRepository.clearPlayerSuggestions(lobbyId)
-            wordRepository.clearSelectedWords(lobbyId)
         }
     }
 
