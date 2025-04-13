@@ -346,4 +346,29 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
         return totalScore
     }
 
+    override suspend fun deletePlayerWordSuggestion(pseudo: String) {
+        val querySnapshot = playerSuggestionsCollection.whereEqualTo("playerPseudo", pseudo).get().await()
+        querySnapshot.forEach { suggestion ->
+            playerSuggestionsCollection.document(suggestion.id).delete().await()
+        }
+    }
+
+    override suspend fun clearPlayerSuggestions(lobbyId: String) {
+        val collection = db.collection("player_suggestions")
+        val querySnapshot = collection.whereEqualTo("lobbyId", lobbyId).get().await()
+        for (document in querySnapshot.documents) {
+            document.reference.delete().await()
+        }
+    }
+
+    override suspend fun clearSelectedWords(lobbyId: String) {
+        val collection = db.collection("words_selected")
+        val querySnapshot = collection.whereEqualTo("lobbyId", lobbyId).get().await()
+        for (document in querySnapshot.documents) {
+            document.reference.delete().await()
+        }
+    }
+
+
+
 }

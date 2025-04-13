@@ -53,30 +53,7 @@ class LobbyScreenViewModel : ViewModel(), KoinComponent {
                     }
                 }
             } catch (e: Exception) {
-                // Gestion des erreurs
                 e.printStackTrace()
-            }
-        }
-    }
-
-    fun startGame() {
-        viewModelScope.launch {
-            val lobby = _currentLobby.value
-            if (lobby != null) {
-                val currentPlayers = _players.value.toMutableList()
-
-                val creator = Player(id = UUID.randomUUID().toString(), name = "Créateur")
-                if (!currentPlayers.any { it.id == creator.id }) {
-                    currentPlayers.add(creator)
-                    lobbyRepository.addPlayerToLobby(lobby.id, creator)
-                }
-
-                // Pour simplifier, le premier joueur est le créateur
-                lobbyRepository.setFirstPlayer(lobby.id, creator.id)
-
-                _players.value = currentPlayers
-                _navigateToGame.value = lobby.id
-                _isGameStarted.value = true
             }
         }
     }

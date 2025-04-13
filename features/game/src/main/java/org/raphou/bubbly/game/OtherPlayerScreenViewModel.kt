@@ -85,4 +85,8 @@ class OtherPlayerScreenViewModel : ViewModel(), KoinComponent {
             _score.value = wordRepository.getTotalPoints(lobbyId)
         }
     }
+
+    suspend fun isTimeFinished(lobbyId: String): Boolean {
+        return lobbyRepository.isTimeFinished(lobbyId)
+    }
 }

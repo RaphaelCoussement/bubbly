@@ -1,10 +1,13 @@
 package org.raphou.bubbly.game
 
 import android.os.CountDownTimer
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -30,10 +32,6 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
     val foundWords by viewModel.foundWords.collectAsState()
     val score by viewModel.score.collectAsState()
 
-    LaunchedEffect(foundWords) {
-        println("Mots trouvés mis à jour : $foundWords")
-    }
-
     LaunchedEffect(lobbyId) {
         viewModel.fetchWords(lobbyId)
     }
@@ -41,12 +39,13 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
     LaunchedEffect(lobbyId) {
         while (true) {
             viewModel.checkWordStatus(lobbyId)
-            kotlinx.coroutines.delay(2000) // Vérifie toutes les 2 secondes
+            kotlinx.coroutines.delay(2000)
         }
     }
 
     // Timer
     var timeLeft by remember { mutableStateOf(30) }
+    var showFloatingButton by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         object : CountDownTimer(30_000, 1_000) {
@@ -56,7 +55,9 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
 
             override fun onFinish() {
                 timeLeft = 0
-                viewModel.fetchFinalScore(lobbyId)
+                viewModel.fetchFinalScore(lobbyId = lobbyId)
+                showFloatingButton = true
+                Log.d("FirstPlayerScreen", "Timer finished, showFloatingButton = $showFloatingButton")
             }
         }.start()
     }
@@ -93,8 +94,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
 
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize()
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
                 Card(
@@ -130,8 +130,30 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
             }
         }
 
+        if (showFloatingButton) {
+            FloatingActionButton(
+                onClick = {
+                    viewModel.setIsTimeFinished(lobbyId)
+                    navController.navigate("game/$lobbyId/ranking")
+                },
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(16.dp)
+                    .size(72.dp),
+                containerColor = colorResource(id = R.color.orange_primary),
+                shape = MaterialTheme.shapes.medium,
+                elevation = FloatingActionButtonDefaults.elevation(10.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = "Go to Ranking",
+                    tint = Color.White
+                )
+            }
+        }
     }
 }
+
 
 
 @Composable

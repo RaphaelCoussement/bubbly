@@ -21,7 +21,7 @@ fun JoinLobbyScreen(navController: NavHostController, code: String) {
 
     LaunchedEffect(navigateToGame) {
         navigateToGame?.let {
-            navController.navigate("game/${lobby?.id}?isFirstPlayer=false")
+            navController.navigate("game/${lobby?.id}")
         }
     }
 

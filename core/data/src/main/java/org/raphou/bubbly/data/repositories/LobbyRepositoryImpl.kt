@@ -2,6 +2,8 @@ package org.raphou.bubbly.data.repositories
 
 import android.util.Log
 import com.google.firebase.Firebase
+import com.google.firebase.firestore.FieldPath
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.firestore
@@ -16,6 +18,8 @@ import org.raphou.bubbly.domain.lobby.ILobbyRepository
 import org.raphou.bubbly.domain.lobby.Lobby
 import org.raphou.bubbly.domain.lobby.Player
 import java.util.UUID
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class LobbyRepositoryImpl : ILobbyRepository {
     private val db = Firebase.firestore
@@ -23,6 +27,41 @@ class LobbyRepositoryImpl : ILobbyRepository {
     private val lobbiesCollection = db.collection("lobbies")
     private val playersCollection = db.collection("players")
     private val lobbyPlayersCollection = db.collection("lobby_players")
+
+
+    override suspend fun setIsTimeFinished(lobbyId: String) {
+        val lobbyRef = lobbiesCollection.document(lobbyId)
+        lobbyRef.update("isTimeFinished", true)
+    }
+
+    override suspend fun isTimeFinished(lobbyId: String): Boolean {
+        val lobbyRef = lobbiesCollection.document(lobbyId)
+        val docSnapshot = lobbyRef.get().await()
+        return docSnapshot.getBoolean("isTimeFinished") ?: false
+    }
+
+    override suspend fun deletePlayer(pseudo: String) {
+        // Recherche le joueur par son pseudo
+        val querySnapshot = playersCollection.whereEqualTo("name", pseudo).get().await()
+
+        if (querySnapshot.isEmpty) {
+            throw Exception("Aucun joueur trouvé avec ce pseudo")
+        }
+
+        // Récupérer le premier joueur correspondant
+        val playerDocument = querySnapshot.documents.first()
+        val playerId = playerDocument.id
+
+        // Supprimer le joueur de la collection players
+        playersCollection.document(playerId).delete().await()
+
+        // Supprimer ce joueur de tous les lobbies où il est inscrit
+        val lobbyPlayersQuerySnapshot = lobbyPlayersCollection.whereEqualTo("playerId", playerId).get().await()
+        lobbyPlayersQuerySnapshot.forEach { lobbyPlayer ->
+            // Supprimer le lien entre le joueur et le lobby
+            lobbyPlayersCollection.document(lobbyPlayer.id).delete().await()
+        }
+    }
 
     override suspend fun getPlayer(pseudo: String): Player {
         // Recherche le joueur par son pseudo
@@ -69,7 +108,6 @@ class LobbyRepositoryImpl : ILobbyRepository {
         }
     }
 
-
     override suspend fun getLobby(lobbyId: String): Lobby {
         return try {
             val document = lobbiesCollection.document(lobbyId).get().await()
@@ -90,7 +128,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
             } while (!existingLobbies.isEmpty) // Vérifie que le code n'est pas déjà utilisé
 
             val lobbyId = UUID.randomUUID().toString()
-            val lobby = Lobby(id = lobbyId, code = code, players = emptyList(), isStarted = false)
+            val lobby = Lobby(id = lobbyId, code = code, players = emptyList(), firstPlayerId = "", isStarted = false, isFirstPlayerAssigned = false, isTimeFinished = false, isAllFirstPlayer = false, firstPlayersIds = emptyList(), isLastTurnInProgress = false)
             lobbiesCollection.document(lobbyId).set(lobby).await()
 
             lobby
@@ -148,7 +186,6 @@ class LobbyRepositoryImpl : ILobbyRepository {
             throw e
         }
     }
-
 
     override fun listenToLobbyPlayers(lobbyId: String, onUpdate: (List<Player>) -> Unit) {
         GlobalScope.launch(Dispatchers.Main) {
@@ -290,6 +327,134 @@ class LobbyRepositoryImpl : ILobbyRepository {
             Log.e("LobbyRepository", "Erreur générale lors de l'écoute du lobby", e)
             throw LobbyException.LobbyNotFound("Erreur inconnue lors de l'écoute du lobby $lobbyId")
         }
+    }
+
+    override suspend fun assignFirstPlayerIfNeeded(lobbyId: String, currentPlayerName: String): String {
+        val lobbyRef = lobbiesCollection.document(lobbyId)
+        val lobbySnap = lobbyRef.get().await()
+        val lobby = lobbySnap.toObject(Lobby::class.java) ?: throw Exception("Lobby not found")
+
+        // Vérifier si tous les joueurs ont été désignés comme premier joueur
+        val lobbyPlayersSnapshot = lobbyPlayersCollection
+            .whereEqualTo("lobbyId", lobbyId)
+            .get()
+            .await()
+
+        val playersCount = lobbyPlayersSnapshot.size()
+        val playersThatHaveBeenFirstPlayer = lobby.firstPlayersIds.size
+
+        if (playersThatHaveBeenFirstPlayer == playersCount) {
+            if (!lobby.isLastTurnInProgress) {
+                // On commence le dernier tour pour le dernier joueur
+                lobbyRef.update("isLastTurnInProgress", true).await()
+                return currentPlayerName // on laisse le joueur courant jouer son dernier tour
+            } else {
+                // Dernier tour déjà fait, on termine
+                return "final ranking"
+            }
+        }
+
+        // Récupérer les joueurs dans la collection des joueurs
+        val playerIds = lobbyPlayersSnapshot.documents.mapNotNull { it.getString("playerId") }
+
+        if (playerIds.isEmpty()) throw Exception("No players found for this lobby")
+
+        // Vérification AVANT la transaction
+        val allPlayers = playerIds.mapNotNull { id ->
+            val snap = playersCollection.document(id).get().await()
+            snap.toObject(Player::class.java)?.copy(id = id)
+        }
+
+        // Si tous les joueurs ont été premier joueur, on peut finir la partie
+        val allHaveBeenFirstPlayer = allPlayers.all { it.isFirstPlayer }
+
+        if (allHaveBeenFirstPlayer) {
+            // Marquer le lobby comme terminé
+            lobbyRef.update("isAllFirstPlayer", true).await()
+            return "final ranking"
+        }
+
+        // Si la partie n'est pas terminée, procéder à l'assignation d'un nouveau premier joueur
+        return suspendCoroutine { continuation ->
+            db.runTransaction { transaction ->
+                val lobbySnap = transaction.get(lobbyRef)
+                val lobby = lobbySnap.toObject(Lobby::class.java) ?: throw Exception("Lobby not found")
+
+                // Si un premier joueur est déjà assigné, on renvoie le nom du joueur actuel
+                if (lobby.isFirstPlayerAssigned) {
+                    val playerSnap = transaction.get(playersCollection.document(lobby.firstPlayerId))
+                    val player = playerSnap.toObject(Player::class.java) ?: throw Exception("Player not found")
+                    return@runTransaction player.name
+                }
+
+                // Récupérer tous les joueurs
+                val players = playerIds.mapNotNull { id ->
+                    val snap = transaction.get(playersCollection.document(id))
+                    snap.toObject(Player::class.java)?.copy(id = id)
+                }
+
+                // Filtrer les joueurs qui ne sont pas encore passés premiers joueurs
+                val availablePlayers = players.filter { !it.isFirstPlayer && !lobby.firstPlayersIds.contains(it.id) }
+
+                if (availablePlayers.isEmpty()) {
+                    // Si tous les joueurs ont été assignés, finir la partie
+                    return@runTransaction "final ranking" // ce cas ne devrait pas arriver normalement
+                }
+
+                // Sélectionner un joueur aléatoire parmi les joueurs disponibles
+                val selected = availablePlayers.random()
+
+                // Ajouter le joueur sélectionné à la liste des joueurs passés premiers
+                transaction.update(lobbyRef, mapOf(
+                    "firstPlayerId" to selected.id,
+                    "isFirstPlayerAssigned" to true,
+                    "firstPlayersIds" to FieldValue.arrayUnion(selected.id)
+                ))
+
+                // Mettre à jour le joueur sélectionné comme premier joueur
+                transaction.update(playersCollection.document(selected.id), mapOf(
+                    "isFirstPlayer" to true
+                ))
+
+                return@runTransaction selected.name
+            }.addOnSuccessListener { result ->
+                continuation.resume(result)
+            }.addOnFailureListener { exception ->
+                continuation.resumeWith(Result.failure(exception))
+            }
+        }
+    }
+
+    override suspend fun getPlayersRanking(lobbyId: String): List<Pair<String, Int>> {
+        val lobbyPlayersSnapshot = lobbyPlayersCollection
+            .whereEqualTo("lobbyId", lobbyId)
+            .get()
+            .await()
+
+        val playerIds = lobbyPlayersSnapshot.documents.mapNotNull { it.getString("playerId") }
+
+        val playersSnapshot = playersCollection
+            .whereIn(FieldPath.documentId(), playerIds)
+            .get()
+            .await()
+
+        return playersSnapshot.documents.mapNotNull { doc ->
+            val name = doc.getString("name")
+            val points = doc.getLong("points")?.toInt()
+            if (name != null && points != null) name to points else null
+        }.sortedByDescending { it.second }
+    }
+
+    override suspend fun resetLobby(lobbyId: String) {
+        val lobbyRef = db.collection("lobbies").document(lobbyId)
+
+        lobbyRef.update(
+            mapOf(
+                "isFirstPlayerAssigned" to false,
+                "isStarted" to false,
+                "isTimeFinished" to false
+            )
+        ).await()
     }
 
 }

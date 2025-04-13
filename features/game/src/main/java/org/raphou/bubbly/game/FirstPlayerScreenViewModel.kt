@@ -9,12 +9,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.raphou.bubbly.domain.lobby.ILobbyRepository
 import org.raphou.bubbly.domain.lobby.Player
 import org.raphou.bubbly.domain.word.IWordRepository
 import org.raphou.bubbly.domain.word.Word
 
 class FirstPlayerScreenViewModel : ViewModel(), KoinComponent {
     private val wordRepository: IWordRepository by inject()
+    private val lobbyRepository: ILobbyRepository by inject()
 
     private val _words = mutableStateOf<List<Word>>(emptyList())
     val words: State<List<Word>> get() = _words
@@ -49,6 +51,11 @@ class FirstPlayerScreenViewModel : ViewModel(), KoinComponent {
     fun fetchFinalScore(lobbyId: String) {
         viewModelScope.launch {
             _score.value = wordRepository.getTotalPoints(lobbyId)
+        }
+    }
+    fun setIsTimeFinished(lobbyId: String){
+        viewModelScope.launch {
+            lobbyRepository.setIsTimeFinished(lobbyId)
         }
     }
 

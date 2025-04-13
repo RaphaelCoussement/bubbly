@@ -6,7 +6,13 @@ data class Lobby(
     val id: String = "",
     val code: String = "",
     val players: List<Player> = emptyList(),
-    @PropertyName("isStarted") @JvmField val isStarted: Boolean = false
+    val firstPlayerId: String = "",
+    @PropertyName("isStarted") @JvmField val isStarted: Boolean = false,
+    @PropertyName("isFirstPlayerAssigned") @JvmField val isFirstPlayerAssigned: Boolean = false,
+    @PropertyName("isTimeFinished") @JvmField val isTimeFinished: Boolean = false,
+    @PropertyName("isAllFirstPlayer") @JvmField val isAllFirstPlayer: Boolean = false,
+    @PropertyName("firstPlayersIds") @JvmField val firstPlayersIds: List<String> = emptyList(),
+    @PropertyName("isLastTurnInProgress") @JvmField val isLastTurnInProgress: Boolean = false,
 )
 
 

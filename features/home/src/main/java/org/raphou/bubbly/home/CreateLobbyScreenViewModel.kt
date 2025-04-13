@@ -67,9 +67,6 @@ class CreateLobbyScreenViewModel() : ViewModel(), KoinComponent {
                         currentPlayers.add(creator)
                         lobbyRepository.addPlayerToLobby(lobby.id, creator)
                     }
-
-                    // Pour simplifier, le premier joueur est le créateur
-                    lobbyRepository.setFirstPlayer(lobby.id, creator.id)
                     lobbyRepository.startLobby(lobby.id)
 
                     _players.value = currentPlayers

@@ -10,8 +10,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import org.raphou.bubbly.game.FinalRankingScreen
 import org.raphou.bubbly.game.FirstPlayerScreen
 import org.raphou.bubbly.game.OtherPlayerScreen
+import org.raphou.bubbly.game.RankingScreen
 import org.raphou.bubbly.home.ChoosePseudoScreen
 import org.raphou.bubbly.home.CreateLobbyScreen
 import org.raphou.bubbly.home.GameScreen
@@ -66,23 +68,29 @@ fun Content() {
         }
 
         composable(
-            "game/{lobbyId}?isFirstPlayer={isFirstPlayer}",
-            arguments = listOf(
-                navArgument("lobbyId") { type = NavType.StringType },
-                navArgument("isFirstPlayer") {
-                    type = NavType.BoolType
-                    defaultValue = false
-                }
-            )
+            "game/{lobbyId}",
+            arguments = listOf(navArgument("lobbyId") { type = NavType.StringType })
         ) { backStackEntry ->
             val lobbyId = backStackEntry.arguments?.getString("lobbyId").orEmpty()
-            val isFirstPlayer = backStackEntry.arguments?.getBoolean("isFirstPlayer") ?: false
-
-            if (isFirstPlayer) {
-                FirstPlayerScreen(navController = navController, lobbyId = lobbyId)
-            } else {
-                OtherPlayerScreen(navController = navController, lobbyId = lobbyId)
-            }
+            GameScreen(navController = navController, lobbyId = lobbyId)
         }
+
+        composable(
+            "game/{lobbyId}/ranking",
+            arguments = listOf(navArgument("lobbyId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val lobbyId = backStackEntry.arguments?.getString("lobbyId").orEmpty()
+            RankingScreen(navController = navController, lobbyId = lobbyId)
+        }
+
+        composable(
+            "game/{lobbyId}/final-ranking",
+            arguments = listOf(navArgument("lobbyId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val lobbyId = backStackEntry.arguments?.getString("lobbyId").orEmpty()
+            FinalRankingScreen(navController = navController, lobbyId = lobbyId)
+        }
+
+
     }
 }

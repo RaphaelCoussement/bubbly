@@ -25,7 +25,7 @@ fun CreateLobbyScreen(navController: NavHostController) {
 
     LaunchedEffect(gameStartedEvent) {
         gameStartedEvent?.let {
-            navController.navigate("game/${lobby?.id}?isFirstPlayer=true")
+            navController.navigate("game/${lobby?.id}")
         }
     }
 

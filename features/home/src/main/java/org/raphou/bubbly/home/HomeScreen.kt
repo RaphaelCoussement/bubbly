@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowForward
@@ -38,6 +39,7 @@ import org.raphou.bubbly.home.R.string.*
 import org.raphou.bubbly.ui.R.*
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -134,7 +136,9 @@ fun HomeScreen(navController: NavHostController) {
                     TextField(
                         value = code,
                         onValueChange = { newCode ->
-                            code = newCode
+                            if (newCode.all { it.isDigit() }) {
+                                code = newCode
+                            }
                         },
                         placeholder = {
                             Text(
@@ -147,7 +151,8 @@ fun HomeScreen(navController: NavHostController) {
                             containerColor = Color.Transparent,
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
-                        )
+                        ),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
                     IconButton(onClick = {
                         val intent = Intent(context, QRCodeScannerActivity::class.java)

@@ -1,6 +1,7 @@
 package org.raphou.bubbly.game
 
 import OtherPlayerScreenViewModel
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -34,6 +35,7 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
 
     val totalTime = 30
     var timeLeft by remember { mutableStateOf(totalTime) }
+    var isNavigation by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         while (timeLeft > 0) {
@@ -48,6 +50,18 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
             viewModel.resetGame(lobbyId)
         }
     }
+
+    LaunchedEffect(lobbyId) {
+        while (!isNavigation) {
+            delay(2000)
+            isNavigation = viewModel.isTimeFinished(lobbyId)
+        }
+
+        if (isNavigation) {
+            navController.navigate("game/$lobbyId/ranking")
+        }
+    }
+
 
     Column(
         modifier = Modifier
