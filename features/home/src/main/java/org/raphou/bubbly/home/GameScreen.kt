@@ -19,7 +19,7 @@ fun GameScreen(navController: NavController, lobbyId: String) {
     val viewModel: GameScreenViewModel = viewModel()
     val screenState = viewModel.screenState.collectAsState()
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(lobbyId) {
         viewModel.init(lobbyId)
     }
 
@@ -42,6 +42,14 @@ fun GameScreen(navController: NavController, lobbyId: String) {
             // Redirection vers le classement final
             LaunchedEffect(Unit) {
                 navController.navigate("game/$lobbyId/final-ranking")
+            }
+        }
+        else -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = "bonjour")
             }
         }
     }

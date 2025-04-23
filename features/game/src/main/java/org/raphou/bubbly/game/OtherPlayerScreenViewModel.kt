@@ -80,9 +80,13 @@ class OtherPlayerScreenViewModel : ViewModel(), KoinComponent {
             }
         }
     }
-    fun fetchFinalScore(lobbyId: String) {
-        viewModelScope.launch {
-            _score.value = wordRepository.getTotalPoints(lobbyId)
+    suspend fun fetchFinalScore(lobbyId: String) {
+        val pseudo = userPreferencesRepository.getPseudo()
+        if (pseudo != null){
+            val player = lobbyRepository.getPlayer(pseudo)
+            viewModelScope.launch {
+                _score.value = wordRepository.getTotalPlayerPoints(lobbyId, player.id)
+            }
         }
     }
 

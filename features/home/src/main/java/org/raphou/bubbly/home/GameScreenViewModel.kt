@@ -17,25 +17,28 @@ class GameScreenViewModel : ViewModel(), KoinComponent {
     private val _screenState = MutableStateFlow<GameScreenState>(GameScreenState.Loading)
     val screenState: StateFlow<GameScreenState> = _screenState
 
+    private var currentTurnIndex = 0
 
     fun init(lobbyId: String) {
         viewModelScope.launch {
-            val currentPlayer = userPrefs.getPseudo()
-            if (currentPlayer != null) {
+            val currentPlayerPseudo = userPrefs.getPseudo()
+            if (currentPlayerPseudo != null) {
                 try {
-                    val firstPlayerName = lobbyRepository.assignFirstPlayerIfNeeded(lobbyId, currentPlayer)
-                    when (firstPlayerName) {
-                        "final ranking" -> _screenState.value = GameScreenState.Finish
-                        currentPlayer -> _screenState.value = GameScreenState.FirstPlayer
+                    val currentPlayer = lobbyRepository.getPlayer(currentPlayerPseudo)
+                    val nextPlayerId = lobbyRepository.getPlayerIdByOrder(lobbyId)
+
+                    when {
+                        nextPlayerId == null -> _screenState.value = GameScreenState.Finish
+                        currentPlayer.id == nextPlayerId -> _screenState.value = GameScreenState.FirstPlayer
                         else -> _screenState.value = GameScreenState.OtherPlayer
                     }
+
                 } catch (e: Exception) {
-                    println("Erreur assignation premier joueur : ${e.message}")
+                    println("Erreur assignation joueur : ${e.message}")
                 }
             }
         }
     }
-
 }
 
 

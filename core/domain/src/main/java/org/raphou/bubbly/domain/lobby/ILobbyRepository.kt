@@ -13,10 +13,14 @@ interface ILobbyRepository {
     suspend fun addPlayer(pseudo: String) : Player
     suspend fun isPseudoExisting(pseudo: String) : Boolean
     suspend fun getPlayer(pseudo: String) : Player
-    suspend fun assignFirstPlayerIfNeeded(lobbyId: String, currentPlayerName: String): String
+    suspend fun assignFirstPlayerIfNeeded(lobbyId: String, currentPlayer: String, turn: Int): String
     suspend fun getPlayersRanking(lobbyId: String): List<Pair<String, Int>>
     suspend fun deletePlayer(pseudo: String)
     suspend fun setIsTimeFinished(lobbyId: String)
     suspend fun isTimeFinished(lobbyId: String) : Boolean
     suspend fun resetLobby(lobbyId: String)
+    suspend fun endCurrentTurn(lobbyId: String)
+    suspend fun orderFirstPlayers(lobbyId: String, players: List<Player>)
+    suspend fun getPlayerIdByOrder(lobbyId: String): String?
+    suspend fun incrementCurrentTurnIndex(lobbyId: String)
 }

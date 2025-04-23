@@ -14,6 +14,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import org.raphou.bubbly.domain.exceptions.LobbyException
 import org.raphou.bubbly.domain.home.IUserPreferencesRepository
+import org.raphou.bubbly.domain.lobby.FirstPlayerOrder
+import org.raphou.bubbly.domain.lobby.FirstPlayerOrderEntry
 import org.raphou.bubbly.domain.lobby.ILobbyRepository
 import org.raphou.bubbly.domain.lobby.Lobby
 import org.raphou.bubbly.domain.lobby.Player
@@ -27,7 +29,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
     private val lobbiesCollection = db.collection("lobbies")
     private val playersCollection = db.collection("players")
     private val lobbyPlayersCollection = db.collection("lobby_players")
-
+    private val firstPlayerOrdersCollection = db.collection("first_player_orders")
 
     override suspend fun setIsTimeFinished(lobbyId: String) {
         val lobbyRef = lobbiesCollection.document(lobbyId)
@@ -329,89 +331,65 @@ class LobbyRepositoryImpl : ILobbyRepository {
         }
     }
 
-    override suspend fun assignFirstPlayerIfNeeded(lobbyId: String, currentPlayerName: String): String {
-        val lobbyRef = lobbiesCollection.document(lobbyId)
-        val lobbySnap = lobbyRef.get().await()
-        val lobby = lobbySnap.toObject(Lobby::class.java) ?: throw Exception("Lobby not found")
+    override suspend fun assignFirstPlayerIfNeeded(lobbyId: String, currentPlayerName: String, turn: Int): String {
+        val orderDoc = firstPlayerOrdersCollection.document(lobbyId).get().await()
+        if (!orderDoc.exists()) throw Exception("No first player order found for this lobby")
 
-        // Vérifie si tous les joueurs ont été désignés comme premier joueur
-        val lobbyPlayersSnapshot = lobbyPlayersCollection
-            .whereEqualTo("lobbyId", lobbyId)
-            .get()
-            .await()
+        val orderedPlayerIds = orderDoc.get("orderedPlayerIds") as? List<String>
+            ?: throw Exception("Invalid ordered player list")
 
-        val playersCount = lobbyPlayersSnapshot.size()
-        val playersThatHaveBeenFirstPlayer = lobby.firstPlayersIds.size
-
-        if (playersThatHaveBeenFirstPlayer == playersCount) {
-            if (!lobby.isLastTurnInProgress) {
-                lobbyRef.update("isLastTurnInProgress", true).await()
-                return currentPlayerName // on laisse le joueur courant jouer son dernier tour
-            } else {
-                // Dernier tour déjà fait, on termine
-                return "final ranking"
-            }
-        }
-
-        // Récupère les joueurs dans la collection des joueurs
-        val playerIds = lobbyPlayersSnapshot.documents.mapNotNull { it.getString("playerId") }
-
-        if (playerIds.isEmpty()) throw Exception("No players found for this lobby")
-
-        // Vérification AVANT la transaction
-        val allPlayers = playerIds.mapNotNull { id ->
-            val snap = playersCollection.document(id).get().await()
-            snap.toObject(Player::class.java)?.copy(id = id)
-        }
-
-        // Si tous les joueurs ont été premier joueur, on peut finir la partie
-        val allHaveBeenFirstPlayer = allPlayers.all { it.isFirstPlayer }
-
-        if (allHaveBeenFirstPlayer) {
-            lobbyRef.update("isAllFirstPlayer", true).await()
-            return "final ranking"
-        }
-
-        // Si la partie n'est pas terminée, on procède à l'assignation d'un nouveau premier joueur
         return suspendCoroutine { continuation ->
             db.runTransaction { transaction ->
+                val lobbyRef = lobbiesCollection.document(lobbyId)
                 val lobbySnap = transaction.get(lobbyRef)
                 val lobby = lobbySnap.toObject(Lobby::class.java) ?: throw Exception("Lobby not found")
 
-                if (lobby.isFirstPlayerAssigned) {
-                    val playerSnap = transaction.get(playersCollection.document(lobby.firstPlayerId))
-                    val player = playerSnap.toObject(Player::class.java) ?: throw Exception("Player not found")
-                    return@runTransaction player.name
+                val firstPlayersPerTurn = lobby.firstPlayersPerTurn ?: emptyMap()
+                val playersCount = orderedPlayerIds.size
+                val turnKey = turn.toString()
+
+                // Si tous les joueurs ont été firstPlayer et le dernier tour a été joué
+                if (firstPlayersPerTurn.size == playersCount && lobby.isLastTurnInProgress) {
+                    return@runTransaction "final ranking"
                 }
 
-                // Récupère tous les joueurs
-                val players = playerIds.mapNotNull { id ->
-                    val snap = transaction.get(playersCollection.document(id))
-                    snap.toObject(Player::class.java)?.copy(id = id)
+                // Si tous les joueurs ont été firstPlayer mais le dernier tour pas encore lancé
+                if (firstPlayersPerTurn.size == playersCount && !lobby.isLastTurnInProgress) {
+                    transaction.update(lobbyRef, "isLastTurnInProgress", true)
+                    return@runTransaction currentPlayerName
                 }
 
-                // Filtre les joueurs qui ne sont pas encore passés premiers joueurs
-                val availablePlayers = players.filter { !it.isFirstPlayer && !lobby.firstPlayersIds.contains(it.id) }
-
-                if (availablePlayers.isEmpty()) {
-                    return@runTransaction "final ranking" // ce cas ne devrait pas arriver normalement
+                // Si déjà défini pour ce tour
+                if (firstPlayersPerTurn.containsKey(turnKey)) {
+                    val existingId = firstPlayersPerTurn[turnKey]!!
+                    val existingSnap = transaction.get(playersCollection.document(existingId))
+                    val existingPlayer = existingSnap.toObject(Player::class.java)
+                        ?: throw Exception("Assigned player not found")
+                    return@runTransaction existingPlayer.name
                 }
 
-                // Sélectionne un joueur aléatoire parmi les joueurs disponibles
-                val selected = availablePlayers.random()
+                // Sinon on assigne le joueur à l’index correspondant
+                val nextIndex = firstPlayersPerTurn.size
+                val selectedPlayerId = orderedPlayerIds.getOrNull(nextIndex)
+                    ?: return@runTransaction "final ranking"
 
-                // Ajoute le joueur sélectionné à la liste des joueurs passés premiers
-                transaction.update(lobbyRef, mapOf(
-                    "firstPlayerId" to selected.id,
-                    "isFirstPlayerAssigned" to true,
-                    "firstPlayersIds" to FieldValue.arrayUnion(selected.id)
-                ))
+                // Reset tous les isFirstPlayer
+                orderedPlayerIds.forEach { id ->
+                    transaction.update(playersCollection.document(id), "isFirstPlayer", false)
+                }
 
-                transaction.update(playersCollection.document(selected.id), mapOf(
-                    "isFirstPlayer" to true
-                ))
+                // Assigne le nouveau joueur
+                transaction.update(playersCollection.document(selectedPlayerId), "isFirstPlayer", true)
 
-                return@runTransaction selected.name
+                // Met à jour la map
+                val updatedMap = HashMap(firstPlayersPerTurn)
+                updatedMap[turnKey] = selectedPlayerId
+                transaction.update(lobbyRef, "firstPlayersPerTurn", updatedMap)
+
+                val selectedSnap = transaction.get(playersCollection.document(selectedPlayerId))
+                val selectedPlayer = selectedSnap.toObject(Player::class.java)
+                    ?: throw Exception("Selected player not found")
+                return@runTransaction selectedPlayer.name
             }.addOnSuccessListener { result ->
                 continuation.resume(result)
             }.addOnFailureListener { exception ->
@@ -419,6 +397,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
             }
         }
     }
+
 
     override suspend fun getPlayersRanking(lobbyId: String): List<Pair<String, Int>> {
         val lobbyPlayersSnapshot = lobbyPlayersCollection
@@ -451,6 +430,58 @@ class LobbyRepositoryImpl : ILobbyRepository {
             )
         ).await()
     }
+
+    override suspend fun endCurrentTurn(lobbyId: String) {
+        val lobbyRef = lobbiesCollection.document(lobbyId)
+        db.runTransaction { transaction ->
+            val snap = transaction.get(lobbyRef)
+            val lobby = snap.toObject(Lobby::class.java) ?: return@runTransaction
+            val nextTurn = (lobby.currentTurn) + 1
+
+            transaction.update(lobbyRef, mapOf(
+                "currentTurn" to nextTurn,
+                "isFirstPlayerAssigned" to false,
+                "firstPlayerId" to null,
+                "assignedTurn" to -1
+            ))
+        }.await()
+    }
+
+    override suspend fun orderFirstPlayers(lobbyId: String, players: List<Player>) {
+        val shuffled = players.shuffled()
+
+        val orderList = shuffled.mapIndexed { index, player ->
+            FirstPlayerOrderEntry(playerId = player.id, order = index)
+        }
+
+        val firstPlayerOrder = FirstPlayerOrder(
+            lobbyId = lobbyId,
+            orderList = orderList,
+            currentTurnIndex = 0
+        )
+
+        firstPlayerOrdersCollection.document(lobbyId).set(firstPlayerOrder)
+    }
+
+    override suspend fun getPlayerIdByOrder(lobbyId: String): String? {
+        val snapshot = firstPlayerOrdersCollection.document(lobbyId).get().await()
+        val data = snapshot.toObject(FirstPlayerOrder::class.java)
+        val currentTurnIndex = data?.currentTurnIndex ?: 0
+
+        // Trouver le joueur correspondant au tour actuel
+        val playerId = data?.orderList?.firstOrNull { it.order == currentTurnIndex }?.playerId
+        return playerId
+    }
+
+    override suspend fun incrementCurrentTurnIndex(lobbyId: String) {
+        val snapshot = firstPlayerOrdersCollection.document(lobbyId).get().await()
+        val data = snapshot.toObject(FirstPlayerOrder::class.java)
+
+        val currentTurnIndex = data?.currentTurnIndex ?: 0
+        val newTurnIndex = currentTurnIndex + 1
+        firstPlayerOrdersCollection.document(lobbyId).update("currentTurnIndex", newTurnIndex)
+    }
+
 
 }
 

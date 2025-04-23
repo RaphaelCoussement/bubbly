@@ -25,9 +25,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import kotlinx.coroutines.delay
 import org.raphou.bubbly.ui.R.color.beige_background
 import org.raphou.bubbly.ui.R.color.orange_primary
+import org.raphou.bubbly.ui.R.string.*
 
 @Composable
 fun FinalRankingScreen(navController: NavController, lobbyId: String) {
@@ -45,7 +45,7 @@ fun FinalRankingScreen(navController: NavController, lobbyId: String) {
             .padding(16.dp)
     ) {
         Text(
-            text = stringResource(R.string.classement_final),
+            text = stringResource(classement_final),
             style = MaterialTheme.typography.headlineLarge,
             color = colorResource(id = orange_primary),
             modifier = Modifier.align(Alignment.CenterHorizontally)

@@ -35,11 +35,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import org.raphou.bubbly.home.R.string.*
 import org.raphou.bubbly.ui.R.*
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
+import org.raphou.bubbly.home.R.string.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

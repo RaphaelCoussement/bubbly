@@ -119,7 +119,8 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
                         "word" to selectedWord.name,
                         "difficulty" to difficulty.name,
                         "points" to points,
-                        "isFound" to false
+                        "isFound" to false,
+                        "firstPlayerId" to ""
                     )
 
                     wordsSelectedCollection.add(chosenWord).await()
@@ -132,9 +133,9 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
         }
     }
 
-    override suspend fun addWordSelected(lobbyId: String, word: String, isFound: Boolean, points: Int) {
+    override suspend fun addWordSelected(lobbyId: String, word: String, isFound: Boolean, points: Int, playerId: String) {
         try {
-            val selectedWord = WordSelected(lobbyId, word, isFound, points)
+            val selectedWord = WordSelected(lobbyId, word, isFound, points, playerId)
             wordsSelectedCollection.add(selectedWord).await()
         } catch (e: Exception) {
             Log.e("WordRepository", "Erreur lors de l'ajout du mot sélectionné", e)
@@ -164,9 +165,16 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
 
             for (document in wordQuery.documents) {
                 val selectedWord = document.getString("word") ?: continue
-                if (isSimilar(selectedWord, word)) {
-                    // MAJ mot comme trouvé
-                    document.reference.update("isFound", true).await()
+                val isAlreadyFound = document.getBoolean("isFound") ?: false
+
+                if (isSimilar(selectedWord, word) && !isAlreadyFound) {
+                    // MAJ mot comme trouvé + playerId
+                    document.reference.update(
+                        mapOf(
+                            "isFound" to true,
+                            "firstPlayerId" to playerId
+                        )
+                    ).await()
                     break
                 }
             }
@@ -176,6 +184,7 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
             throw WordException.WordInsertionFailed("Erreur lors de l'ajout de la suggestion.", e)
         }
     }
+
 
 
     private fun levenshteinDistance(s1: String, s2: String): Int {
@@ -203,7 +212,7 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
     }
 
 
-    override suspend fun getWordInfo(lobbyId: String, word: String): WordSelected? {
+    override suspend fun getWordInfo(lobbyId: String,playerId: String, word: String): WordSelected? {
         try {
             val wordQuery = wordsSelectedCollection
                 .whereEqualTo("lobbyId", lobbyId)
@@ -222,7 +231,8 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
                     lobbyId = wordDocument.getString("lobbyId") ?: "",
                     word = wordDocument.getString("word") ?: "",
                     isFound = wordDocument.getBoolean("isFound") ?: false,
-                    points = wordDocument.getLong("points")?.toInt() ?: 0
+                    points = wordDocument.getLong("points")?.toInt() ?: 0,
+                    firstPlayerId = wordDocument.getString("firstPlayerId") ?: "",
                 )
             }
 
@@ -234,7 +244,8 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
                         lobbyId = doc.getString("lobbyId") ?: "",
                         word = dbWord,
                         isFound = doc.getBoolean("isFound") ?: false,
-                        points = doc.getLong("points")?.toInt() ?: 0
+                        points = doc.getLong("points")?.toInt() ?: 0,
+                        firstPlayerId = doc.getString("firstPlayerId") ?: "",
                     )
                 }
             }
@@ -270,47 +281,33 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
 
         // Récupérer les points déjà enregistrés dans la base de données
         val playerPoints = playerDocument.getLong("points")?.toInt() ?: 0
-        Log.e("playerPoints", "playerPoints $playerPoints")
-        totalScore = playerPoints // Initialiser totalScore avec les points en base
-        Log.e("playerPoints", "totalScore $totalScore")
+        totalScore = playerPoints
+        Log.e("calculatePlayerScore", "Score initial du joueur : $totalScore")
 
-        // Parcourir les suggestions et calculer le score de la partie
+        // Parcourir les suggestions du joueur
         for (document in suggestionsQuery.documents) {
             val suggestionPlayerId = document.getString("playerId")
-            if (suggestionPlayerId == null) {
-                Log.e("suggestionPlayerId", "Erreur: playerId est nul")
-                continue
-            }
+            if (suggestionPlayerId == null || suggestionPlayerId != playerId) continue
 
-            if (suggestionPlayerId != playerId) continue
+            val word = document.getString("word") ?: continue
 
-            val word = document.getString("word")
-            if (word == null) {
-                Log.e("word", "Erreur: word est nul")
-                continue
-            }
+            val wordInfo = getWordInfo(lobbyId,playerId, word) ?: continue
 
-            val wordInfo = getWordInfo(lobbyId, word)
-            if (wordInfo == null) {
-                Log.e("wordInfo", "Erreur: wordInfo est nul pour le mot $word")
-                continue
-            }
+            Log.d("calculatePlayerScore", "Suggestion : ${wordInfo.word}, isFound: ${wordInfo.isFound}, trouvé par: ${wordInfo.firstPlayerId}")
 
-            Log.d("suggestionPlayerId", "wordInfo: ${wordInfo.word}")
-
-            // Ajouter les points de la suggestion si le mot est trouvé
-            if (wordInfo.isFound) {
+            if (wordInfo.isFound && wordInfo.firstPlayerId == playerId) {
                 totalScore += wordInfo.points
             }
         }
 
-        Log.e("playerPoints", "new totalScore $totalScore")
+        Log.e("calculatePlayerScore", "Score final calculé : $totalScore")
 
         // Mettre à jour le score du joueur dans la base de données
         playersCollection.document(playerId).update("points", totalScore).await()
 
         return totalScore
     }
+
 
     override suspend fun resetGame(lobbyId: String, playerId: String) {
 
@@ -324,8 +321,10 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
         return wordsQuery.documents.mapNotNull { it.getString("word") }
     }
 
-    override suspend fun getTotalPoints(lobbyId: String): Int {
+    override suspend fun getTotalPoints(lobbyId: String, playerId: String): Int {
         var totalScore = 0
+        val countedWords = mutableSetOf<String>()
+
         try {
             val suggestionsQuery = playerSuggestionsCollection
                 .whereEqualTo("lobbyId", lobbyId)
@@ -334,9 +333,38 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
 
             for (document in suggestionsQuery.documents) {
                 val word = document.getString("word") ?: continue
-                val wordInfo = getWordInfo(lobbyId, word) ?: continue
+
+                // Si le mot a déjà été compté, on passe au suivant
+                if (countedWords.contains(word)) continue
+
+                val wordInfo = getWordInfo(lobbyId, playerId, word) ?: continue
 
                 if (wordInfo.isFound) {
+                    totalScore += wordInfo.points
+                    countedWords.add(word) // On ajoute le mot à la liste des mots déjà comptés
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("getTotalPoints", "Erreur lors du calcul du score : ${e.message}")
+        }
+
+        return totalScore
+    }
+
+    override suspend fun getTotalPlayerPoints(lobbyId: String, playerId: String): Int {
+        var totalScore = 0
+        try {
+            val suggestionsQuery = playerSuggestionsCollection
+                .whereEqualTo("lobbyId", lobbyId)
+                .whereEqualTo("playerId", playerId)
+                .get()
+                .await()
+
+            for (document in suggestionsQuery.documents) {
+                val word = document.getString("word") ?: continue
+                val wordInfo = getWordInfo(lobbyId, playerId,word) ?: continue
+
+                if (wordInfo.isFound && wordInfo.firstPlayerId == playerId) {
                     totalScore += wordInfo.points
                 }
             }

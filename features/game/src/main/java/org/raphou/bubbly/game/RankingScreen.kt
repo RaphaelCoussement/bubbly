@@ -28,6 +28,7 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import org.raphou.bubbly.ui.R.color.beige_background
 import org.raphou.bubbly.ui.R.color.orange_primary
+import org.raphou.bubbly.ui.R.string.*
 
 @Composable
 fun RankingScreen(navController: NavController, lobbyId: String) {
@@ -40,6 +41,7 @@ fun RankingScreen(navController: NavController, lobbyId: String) {
 
     LaunchedEffect(key1 = lobbyId) {
         delay(3000)
+        viewModel.endCurrentTurn(lobbyId)
         viewModel.resetLobbyAfterRanking(lobbyId)
         navController.navigate("game/$lobbyId")
     }
@@ -52,7 +54,7 @@ fun RankingScreen(navController: NavController, lobbyId: String) {
             .padding(16.dp)
     ) {
         Text(
-            text = stringResource(R.string.classement),
+            text = stringResource(classement),
             style = MaterialTheme.typography.headlineLarge,
             color = colorResource(id = orange_primary),
             modifier = Modifier.align(Alignment.CenterHorizontally)

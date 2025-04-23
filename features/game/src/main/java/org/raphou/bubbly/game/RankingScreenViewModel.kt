@@ -31,4 +31,11 @@ class RankingScreenViewModel : ViewModel(), KoinComponent {
         }
     }
 
+    fun endCurrentTurn(lobbyId: String) {
+        viewModelScope.launch {
+            lobbyRepository.endCurrentTurn(lobbyId)
+        }
+    }
+
+
 }

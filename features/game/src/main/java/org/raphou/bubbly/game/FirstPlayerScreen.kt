@@ -19,12 +19,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import org.raphou.bubbly.domain.word.Word
-import org.raphou.bubbly.game.R.*
-import org.raphou.bubbly.game.R.string.temps_coul
-import org.raphou.bubbly.game.R.string.temps_restant_secondes
-import org.raphou.bubbly.game.R.string.voici_les_mots_faire_deviner
 import org.raphou.bubbly.ui.R
+import org.raphou.bubbly.ui.R.string.*
 
 @Composable
 fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
@@ -32,6 +31,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
     val words by viewModel.words
     val foundWords by viewModel.foundWords.collectAsState()
     val score by viewModel.score.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(lobbyId) {
         viewModel.fetchWords(lobbyId)
@@ -56,12 +56,16 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
 
             override fun onFinish() {
                 timeLeft = 0
-                viewModel.fetchFinalScore(lobbyId = lobbyId)
                 showFloatingButton = true
                 Log.d("FirstPlayerScreen", "Timer finished, showFloatingButton = $showFloatingButton")
+
+                coroutineScope.launch {
+                    viewModel.fetchFinalScore(lobbyId = lobbyId)
+                }
             }
         }.start()
     }
+
 
     Column(
         modifier = Modifier
@@ -69,7 +73,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
             .background(colorResource(id = R.color.beige_background))
     ) {
         Text(
-            text = stringResource(id = voici_les_mots_faire_deviner),
+            text = stringResource(voici_les_mots_faire_deviner),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier
                 .padding(16.dp)
@@ -111,7 +115,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
                     if (timeLeft == 0) {
                         Text(
                             text = stringResource(
-                                string.nombre_de_gorg_es_distribuer,
+                                nombre_de_gorg_es_distribuer,
                                 score
                             ),
                             style = MaterialTheme.typography.headlineMedium,
@@ -135,6 +139,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
             FloatingActionButton(
                 onClick = {
                     viewModel.setIsTimeFinished(lobbyId)
+                    viewModel.onPlayerTurnFinished(lobbyId)
                     navController.navigate("game/$lobbyId/ranking")
                 },
                 modifier = Modifier
