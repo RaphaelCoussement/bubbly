@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.raphou.bubbly.domain.home.IUserPreferencesRepository
 import org.raphou.bubbly.domain.lobby.ILobbyRepository
 import org.raphou.bubbly.domain.lobby.Lobby
 import org.raphou.bubbly.domain.lobby.Player
@@ -18,6 +19,7 @@ import java.util.UUID
 
 class CreateLobbyScreenViewModel() : ViewModel(), KoinComponent {
     private val lobbyRepository: ILobbyRepository by inject()
+    private val userPreferencesRepository: IUserPreferencesRepository by inject()
 
     private val _currentLobby: MutableStateFlow<Lobby?> = MutableStateFlow(null)
     val currentSession: StateFlow<Lobby?>
@@ -57,19 +59,21 @@ class CreateLobbyScreenViewModel() : ViewModel(), KoinComponent {
             if (lobby != null) {
                 val currentPlayers = _players.value.toMutableList()
 
-                val creator = Player(id = UUID.randomUUID().toString(), name = "Créateur")
-                if (!currentPlayers.any { it.id == creator.id }) {
-                    currentPlayers.add(creator)
-                    lobbyRepository.addPlayerToLobby(lobby.id, creator)
+                val player = userPreferencesRepository.getPseudo()
+                if (player != null){
+                    val creator = lobbyRepository.getPlayer(player)
+
+                    if (!currentPlayers.any { it.id == creator.id }) {
+                        currentPlayers.add(creator)
+                        lobbyRepository.addPlayerToLobby(lobby.id, creator)
+                    }
+                    lobbyRepository.orderFirstPlayers(lobby.id, currentPlayers)
+                    lobbyRepository.startLobby(lobby.id)
+
+                    _players.value = currentPlayers
+                    _navigateToGame.value = lobby.id
+                    _gameStartedEvent.send(Unit)
                 }
-
-                // Pour simplifier, le premier joueur est le créateur
-                lobbyRepository.setFirstPlayer(lobby.id, creator.id)
-                lobbyRepository.startLobby(lobby.id)
-
-                _players.value = currentPlayers
-                _navigateToGame.value = lobby.id
-                _gameStartedEvent.send(Unit)
             }
         }
     }

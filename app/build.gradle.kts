@@ -67,6 +67,8 @@ dependencies {
         project(":core:ui")
     )
 
+    // pseudo
+    implementation("androidx.datastore:datastore-preferences:1.1.4")
 
     //Android/Kotlin
     implementation(libs.androidx.core.ktx)

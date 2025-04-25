@@ -21,6 +21,8 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+
+
     // Compose part
     buildFeatures {
         compose = true
@@ -62,10 +64,11 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-
+    // qrcode
+    implementation("com.google.zxing:core:3.5.1")
+    implementation("androidx.compose.ui:ui-graphics:1.7.8")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 
     //Navigation
     implementation(libs.androidx.navigation.compose)
-
-
 }

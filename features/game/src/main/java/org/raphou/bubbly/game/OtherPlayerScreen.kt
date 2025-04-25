@@ -1,6 +1,7 @@
 package org.raphou.bubbly.game
 
 import OtherPlayerScreenViewModel
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -20,8 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
-import org.raphou.bubbly.game.R.string
 import org.raphou.bubbly.ui.R
+import org.raphou.bubbly.ui.R.string.*
 
 @Composable
 fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
@@ -32,8 +33,9 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
     val score by viewModel.score
     val suggestionInput = remember { mutableStateOf(TextFieldValue()) }
 
-    val totalTime = 50
+    val totalTime = 30
     var timeLeft by remember { mutableStateOf(totalTime) }
+    var isNavigation by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         while (timeLeft > 0) {
@@ -45,9 +47,21 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
 
     LaunchedEffect(isTimeUp) {
         if (isTimeUp) {
-            viewModel.resetGame(lobbyId, "57eee731-2123-498c-a01b-d60bd81f89f0")
+            viewModel.resetGame(lobbyId)
         }
     }
+
+    LaunchedEffect(lobbyId) {
+        while (!isNavigation) {
+            delay(2000)
+            isNavigation = viewModel.isTimeFinished(lobbyId)
+        }
+
+        if (isNavigation) {
+            navController.navigate("game/$lobbyId/ranking")
+        }
+    }
+
 
     Column(
         modifier = Modifier
@@ -55,7 +69,7 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
             .background(colorResource(id = R.color.beige_background))
     ) {
         Text(
-            text = stringResource(string.suggestions_de_mots),
+            text = stringResource(suggestions_de_mots),
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
@@ -66,7 +80,7 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = if (!isTimeUp) stringResource(string.temps_restant_s, timeLeft) else stringResource(string.temps_coul),
+            text = if (!isTimeUp) stringResource(temps_restant_s, timeLeft) else stringResource(temps_coul),
             color = Color.Red,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
@@ -80,7 +94,7 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
             OutlinedTextField(
                 value = suggestionInput.value,
                 onValueChange = { suggestionInput.value = it },
-                label = { Text(stringResource(string.sugg_rer_un_mot)) },
+                label = { Text(stringResource(sugg_rer_un_mot)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
@@ -93,7 +107,7 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
             Button(
                 onClick = {
                     if (suggestionInput.value.text.isNotEmpty() && suggestions.size < 10) {
-                        viewModel.addPlayerSuggestion(lobbyId, "57eee731-2123-498c-a01b-d60bd81f89f0", suggestionInput.value.text.trim())
+                        viewModel.addPlayerSuggestion(lobbyId, suggestionInput.value.text.trim())
                         suggestionInput.value = TextFieldValue("")
                     } else {
                         Toast.makeText(
@@ -111,7 +125,7 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
                     containerColor = colorResource(id = R.color.orange_primary)
                 )
             ) {
-                Text(stringResource(string.soumettre_la_suggestion))
+                Text(stringResource(soumettre_la_suggestion))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -152,7 +166,7 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = stringResource(string.votre_score, score),
+                        text = stringResource(votre_score, score),
                         color = Color.White,
                         style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier
@@ -162,7 +176,7 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
                 }
 
                 Text(
-                    text = stringResource(string.mots_trouver),
+                    text = stringResource(mots_trouver),
                     style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.padding(16.dp),
                     color = colorResource(id = R.color.orange_primary)

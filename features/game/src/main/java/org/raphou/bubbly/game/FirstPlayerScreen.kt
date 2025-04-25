@@ -1,10 +1,13 @@
 package org.raphou.bubbly.game
 
 import android.os.CountDownTimer
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,16 +15,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import org.raphou.bubbly.domain.word.Word
-import org.raphou.bubbly.game.R.string.temps_coul
-import org.raphou.bubbly.game.R.string.temps_restant_secondes
-import org.raphou.bubbly.game.R.string.voici_les_mots_faire_deviner
 import org.raphou.bubbly.ui.R
+import org.raphou.bubbly.ui.R.string.*
 
 @Composable
 fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
@@ -29,10 +31,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
     val words by viewModel.words
     val foundWords by viewModel.foundWords.collectAsState()
     val score by viewModel.score.collectAsState()
-
-    LaunchedEffect(foundWords) {
-        println("Mots trouvés mis à jour : $foundWords")
-    }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(lobbyId) {
         viewModel.fetchWords(lobbyId)
@@ -41,25 +40,32 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
     LaunchedEffect(lobbyId) {
         while (true) {
             viewModel.checkWordStatus(lobbyId)
-            kotlinx.coroutines.delay(2000) // Vérifie toutes les 2 secondes
+            kotlinx.coroutines.delay(2000)
         }
     }
 
     // Timer
     var timeLeft by remember { mutableStateOf(30) }
+    var showFloatingButton by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        object : CountDownTimer(50_000, 1_000) {
+        object : CountDownTimer(30_000, 1_000) {
             override fun onTick(millisUntilFinished: Long) {
                 timeLeft = (millisUntilFinished / 1_000).toInt()
             }
 
             override fun onFinish() {
                 timeLeft = 0
-                viewModel.fetchFinalScore(lobbyId)
+                showFloatingButton = true
+                Log.d("FirstPlayerScreen", "Timer finished, showFloatingButton = $showFloatingButton")
+
+                coroutineScope.launch {
+                    viewModel.fetchFinalScore(lobbyId = lobbyId)
+                }
             }
         }.start()
     }
+
 
     Column(
         modifier = Modifier
@@ -67,7 +73,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
             .background(colorResource(id = R.color.beige_background))
     ) {
         Text(
-            text = stringResource(id = voici_les_mots_faire_deviner),
+            text = stringResource(voici_les_mots_faire_deviner),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier
                 .padding(16.dp)
@@ -93,8 +99,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
 
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize()
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
                 Card(
@@ -110,7 +115,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
                     if (timeLeft == 0) {
                         Text(
                             text = stringResource(
-                                org.raphou.bubbly.game.R.string.nombre_de_gorg_es_distribuer,
+                                nombre_de_gorg_es_distribuer,
                                 score
                             ),
                             style = MaterialTheme.typography.headlineMedium,
@@ -130,8 +135,31 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
             }
         }
 
+        if (showFloatingButton) {
+            FloatingActionButton(
+                onClick = {
+                    viewModel.setIsTimeFinished(lobbyId)
+                    viewModel.onPlayerTurnFinished(lobbyId)
+                    navController.navigate("game/$lobbyId/ranking")
+                },
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(16.dp)
+                    .size(72.dp),
+                containerColor = colorResource(id = R.color.orange_primary),
+                shape = MaterialTheme.shapes.medium,
+                elevation = FloatingActionButtonDefaults.elevation(10.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = "Go to Ranking",
+                    tint = Color.White
+                )
+            }
+        }
     }
 }
+
 
 
 @Composable

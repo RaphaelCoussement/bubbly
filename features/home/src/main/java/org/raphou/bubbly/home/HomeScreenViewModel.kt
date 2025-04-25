@@ -8,10 +8,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.raphou.bubbly.domain.home.IUserPreferencesRepository
+import org.raphou.bubbly.domain.lobby.ILobbyRepository
 import org.raphou.bubbly.domain.theme.Theme
+import org.raphou.bubbly.domain.word.IWordRepository
 import org.raphou.domain.repositories.IThemeRepository
 
 class HomeScreenViewModel : ViewModel(), KoinComponent {
+
+    private val userPreferencesRepository: IUserPreferencesRepository by inject()
+    private val lobbyRepository: ILobbyRepository by inject()
+    private val wordRepository: IWordRepository by inject()
 
     private val themeRepository: IThemeRepository by inject()
 
@@ -31,6 +38,16 @@ class HomeScreenViewModel : ViewModel(), KoinComponent {
             val fetchedThemes = themeRepository.getPopularThemes()
             _themes.update { fetchedThemes }
             _isLoading.value = false
+        }
+    }
+    fun logout() {
+        viewModelScope.launch {
+            val pseudo = userPreferencesRepository.getPseudo()
+            if (pseudo != null){
+                lobbyRepository.deletePlayer(pseudo)
+                wordRepository.deletePlayerWordSuggestion(pseudo)
+            }
+            userPreferencesRepository.clearPseudo()
         }
     }
 }

@@ -9,12 +9,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.raphou.bubbly.domain.home.IUserPreferencesRepository
+import org.raphou.bubbly.domain.lobby.ILobbyRepository
 import org.raphou.bubbly.domain.lobby.Player
 import org.raphou.bubbly.domain.word.IWordRepository
 import org.raphou.bubbly.domain.word.Word
 
 class FirstPlayerScreenViewModel : ViewModel(), KoinComponent {
     private val wordRepository: IWordRepository by inject()
+    private val lobbyRepository: ILobbyRepository by inject()
+    private val userPrefs: IUserPreferencesRepository by inject()
 
     private val _words = mutableStateOf<List<Word>>(emptyList())
     val words: State<List<Word>> get() = _words
@@ -35,20 +39,43 @@ class FirstPlayerScreenViewModel : ViewModel(), KoinComponent {
         }
     }
 
-    fun checkWordStatus(lobbyId: String) {
-        viewModelScope.launch {
-            val statusMap = mutableMapOf<String, Boolean>()
-            _words.value.forEach { word ->
-                val wordInfo = wordRepository.getWordInfo(lobbyId, word.name)
-                statusMap[word.name] = wordInfo?.isFound ?: false
+    suspend fun checkWordStatus(lobbyId: String) {
+        val currentPlayer = userPrefs.getPseudo()
+        if (currentPlayer != null){
+            val player = lobbyRepository.getPlayer(currentPlayer)
+            viewModelScope.launch {
+                val statusMap = mutableMapOf<String, Boolean>()
+                _words.value.forEach { word ->
+                    val wordInfo = wordRepository.getWordInfo(lobbyId, player.id, word.name)
+                    statusMap[word.name] = wordInfo?.isFound ?: false
+                }
+                _foundWords.value = statusMap.toMap()
             }
-            _foundWords.value = statusMap.toMap()
         }
     }
 
-    fun fetchFinalScore(lobbyId: String) {
+    suspend fun fetchFinalScore(lobbyId: String) {
+        val currentPlayer = userPrefs.getPseudo()
+        if (currentPlayer != null){
+            val player = lobbyRepository.getPlayer(currentPlayer)
+            viewModelScope.launch {
+                _score.value = wordRepository.getTotalPoints(lobbyId, player.id)
+            }
+        }
+    }
+    fun setIsTimeFinished(lobbyId: String){
         viewModelScope.launch {
-            _score.value = wordRepository.getTotalPoints(lobbyId)
+            lobbyRepository.setIsTimeFinished(lobbyId)
+        }
+    }
+
+    fun onPlayerTurnFinished(lobbyId: String) {
+        viewModelScope.launch {
+            try {
+                lobbyRepository.incrementCurrentTurnIndex(lobbyId)
+            } catch (e: Exception) {
+                println("Erreur incrémentation : ${e.message}")
+            }
         }
     }
 

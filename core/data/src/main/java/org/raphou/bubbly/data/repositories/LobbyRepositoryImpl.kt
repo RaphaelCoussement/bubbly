@@ -2,6 +2,8 @@ package org.raphou.bubbly.data.repositories
 
 import android.util.Log
 import com.google.firebase.Firebase
+import com.google.firebase.firestore.FieldPath
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.firestore
@@ -11,10 +13,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import org.raphou.bubbly.domain.exceptions.LobbyException
+import org.raphou.bubbly.domain.home.IUserPreferencesRepository
+import org.raphou.bubbly.domain.lobby.FirstPlayerOrder
+import org.raphou.bubbly.domain.lobby.FirstPlayerOrderEntry
 import org.raphou.bubbly.domain.lobby.ILobbyRepository
 import org.raphou.bubbly.domain.lobby.Lobby
 import org.raphou.bubbly.domain.lobby.Player
 import java.util.UUID
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class LobbyRepositoryImpl : ILobbyRepository {
     private val db = Firebase.firestore
@@ -22,6 +29,86 @@ class LobbyRepositoryImpl : ILobbyRepository {
     private val lobbiesCollection = db.collection("lobbies")
     private val playersCollection = db.collection("players")
     private val lobbyPlayersCollection = db.collection("lobby_players")
+    private val firstPlayerOrdersCollection = db.collection("first_player_orders")
+
+    override suspend fun setIsTimeFinished(lobbyId: String) {
+        val lobbyRef = lobbiesCollection.document(lobbyId)
+        lobbyRef.update("isTimeFinished", true)
+    }
+
+    override suspend fun isTimeFinished(lobbyId: String): Boolean {
+        val lobbyRef = lobbiesCollection.document(lobbyId)
+        val docSnapshot = lobbyRef.get().await()
+        return docSnapshot.getBoolean("isTimeFinished") ?: false
+    }
+
+    override suspend fun deletePlayer(pseudo: String) {
+        // Recherche le joueur par son pseudo
+        val querySnapshot = playersCollection.whereEqualTo("name", pseudo).get().await()
+
+        if (querySnapshot.isEmpty) {
+            throw Exception("Aucun joueur trouvé avec ce pseudo")
+        }
+
+        // Récupérer le premier joueur correspondant
+        val playerDocument = querySnapshot.documents.first()
+        val playerId = playerDocument.id
+
+        // Supprimer le joueur de la collection players
+        playersCollection.document(playerId).delete().await()
+
+        // Supprimer ce joueur de tous les lobbies où il est inscrit
+        val lobbyPlayersQuerySnapshot = lobbyPlayersCollection.whereEqualTo("playerId", playerId).get().await()
+        lobbyPlayersQuerySnapshot.forEach { lobbyPlayer ->
+            // Supprimer le lien entre le joueur et le lobby
+            lobbyPlayersCollection.document(lobbyPlayer.id).delete().await()
+        }
+    }
+
+    override suspend fun getPlayer(pseudo: String): Player {
+        // Recherche le joueur par son pseudo
+        val querySnapshot = playersCollection.whereEqualTo("name", pseudo).get().await()
+
+        // Vérifier si un joueur avec ce pseudo existe
+        if (querySnapshot.isEmpty) {
+            throw Exception("Aucun joueur trouvé avec ce pseudo")
+        }
+
+        // Récupérer le premier joueur correspondant
+        val playerDocument = querySnapshot.documents.first()
+        return playerDocument.toObject(Player::class.java) ?: throw Exception("Erreur de conversion du joueur")
+    }
+
+    override suspend fun addPlayer(pseudo: String): Player {
+        // Vérifier si le pseudo existe déjà
+        if (isPseudoExisting(pseudo)) {
+            throw Exception("Le pseudo est déjà pris")
+        }
+
+        val player = Player(
+            id = UUID.randomUUID().toString(), // Générer un ID unique pour le joueur
+            name = pseudo
+        )
+
+        // Ajoute le joueur à la collection "players"
+        playersCollection.document(player.id).set(player)
+
+        return player
+    }
+
+    override suspend fun isPseudoExisting(pseudo: String): Boolean {
+        return try {
+            val querySnapshot = playersCollection
+                .whereEqualTo("name", pseudo)
+                .get()
+                .await()
+
+            querySnapshot.isEmpty.not()
+        } catch (e: Exception) {
+            Log.e("FirestoreError", "Erreur lors de la vérification du pseudo: ${e.message}")
+            false
+        }
+    }
 
     override suspend fun getLobby(lobbyId: String): Lobby {
         return try {
@@ -43,7 +130,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
             } while (!existingLobbies.isEmpty) // Vérifie que le code n'est pas déjà utilisé
 
             val lobbyId = UUID.randomUUID().toString()
-            val lobby = Lobby(id = lobbyId, code = code, players = emptyList(), isCreator = true, isStarted = false)
+            val lobby = Lobby(id = lobbyId, code = code, players = emptyList(), firstPlayerId = "", isStarted = false, isFirstPlayerAssigned = false, isTimeFinished = false, isAllFirstPlayer = false, firstPlayersIds = emptyList(), isLastTurnInProgress = false)
             lobbiesCollection.document(lobbyId).set(lobby).await()
 
             lobby
@@ -53,23 +140,34 @@ class LobbyRepositoryImpl : ILobbyRepository {
         }
     }
 
-
-    override suspend fun joinLobby(code: String): Lobby {
+    override suspend fun joinLobby(code: String, pseudo : String): Lobby {
         return try {
+            // Recherche du lobby avec le code
             val querySnapshot = lobbiesCollection.whereEqualTo("code", code).get().await()
             if (querySnapshot.isEmpty) {
                 throw LobbyException.LobbyNotFound("Aucun lobby trouvé avec le code $code")
             }
 
+            // Récupération du lobby
             val lobbyDoc = querySnapshot.documents.first()
             val lobby = lobbyDoc.toObject(Lobby::class.java)?.copy(id = lobbyDoc.id)
                 ?: throw LobbyException.InvalidLobby("Lobby avec le code $code est invalide.")
 
-            val player = Player(id = UUID.randomUUID().toString(), name = "Nouveau Joueur")
-            playersCollection.document(player.id).set(player).await()
+            // Récupère le pseudo enregistré sur le téléphone
+            val pseudo = pseudo
 
+            // Récupérer le player correspondant au pseudo dans Firebase
+            val playerQuerySnapshot = playersCollection.whereEqualTo("name", pseudo).get().await()
+            val player = if (playerQuerySnapshot != null && playerQuerySnapshot.documents.isNotEmpty()) {
+                val playerDoc = playerQuerySnapshot.documents.first()
+                playerDoc.toObject(Player::class.java)?.copy(id = playerDoc.id)
+                    ?: throw LobbyException.InvalidPlayer("Le joueur avec le pseudo $pseudo est invalide.")
+            } else {
+                throw LobbyException.PlayerNotFound("Aucun joueur trouvé avec le pseudo $pseudo")
+            }
+
+            // Associer le joueur au lobby dans la collection 'lobby_players'
             try {
-                // Associe le joueur au lobby dans la collection 'lobby_players'
                 val lobbyPlayerData = mapOf(
                     "lobbyId" to lobby.id,
                     "playerId" to player.id
@@ -129,11 +227,8 @@ class LobbyRepositoryImpl : ILobbyRepository {
         }
     }
 
-
     override suspend fun addPlayerToLobby(lobbyId: String, player: Player) {
         try {
-            playersCollection.document(player.id).set(player).await()
-
             lobbyPlayersCollection.add(mapOf("lobbyId" to lobbyId, "playerId" to player.id)).await()
 
         } catch (e: FirebaseFirestoreException) {
@@ -235,6 +330,158 @@ class LobbyRepositoryImpl : ILobbyRepository {
             throw LobbyException.LobbyNotFound("Erreur inconnue lors de l'écoute du lobby $lobbyId")
         }
     }
+
+    override suspend fun assignFirstPlayerIfNeeded(lobbyId: String, currentPlayerName: String, turn: Int): String {
+        val orderDoc = firstPlayerOrdersCollection.document(lobbyId).get().await()
+        if (!orderDoc.exists()) throw Exception("No first player order found for this lobby")
+
+        val orderedPlayerIds = orderDoc.get("orderedPlayerIds") as? List<String>
+            ?: throw Exception("Invalid ordered player list")
+
+        return suspendCoroutine { continuation ->
+            db.runTransaction { transaction ->
+                val lobbyRef = lobbiesCollection.document(lobbyId)
+                val lobbySnap = transaction.get(lobbyRef)
+                val lobby = lobbySnap.toObject(Lobby::class.java) ?: throw Exception("Lobby not found")
+
+                val firstPlayersPerTurn = lobby.firstPlayersPerTurn ?: emptyMap()
+                val playersCount = orderedPlayerIds.size
+                val turnKey = turn.toString()
+
+                // Si tous les joueurs ont été firstPlayer et le dernier tour a été joué
+                if (firstPlayersPerTurn.size == playersCount && lobby.isLastTurnInProgress) {
+                    return@runTransaction "final ranking"
+                }
+
+                // Si tous les joueurs ont été firstPlayer mais le dernier tour pas encore lancé
+                if (firstPlayersPerTurn.size == playersCount && !lobby.isLastTurnInProgress) {
+                    transaction.update(lobbyRef, "isLastTurnInProgress", true)
+                    return@runTransaction currentPlayerName
+                }
+
+                // Si déjà défini pour ce tour
+                if (firstPlayersPerTurn.containsKey(turnKey)) {
+                    val existingId = firstPlayersPerTurn[turnKey]!!
+                    val existingSnap = transaction.get(playersCollection.document(existingId))
+                    val existingPlayer = existingSnap.toObject(Player::class.java)
+                        ?: throw Exception("Assigned player not found")
+                    return@runTransaction existingPlayer.name
+                }
+
+                // Sinon on assigne le joueur à l’index correspondant
+                val nextIndex = firstPlayersPerTurn.size
+                val selectedPlayerId = orderedPlayerIds.getOrNull(nextIndex)
+                    ?: return@runTransaction "final ranking"
+
+                // Reset tous les isFirstPlayer
+                orderedPlayerIds.forEach { id ->
+                    transaction.update(playersCollection.document(id), "isFirstPlayer", false)
+                }
+
+                // Assigne le nouveau joueur
+                transaction.update(playersCollection.document(selectedPlayerId), "isFirstPlayer", true)
+
+                // Met à jour la map
+                val updatedMap = HashMap(firstPlayersPerTurn)
+                updatedMap[turnKey] = selectedPlayerId
+                transaction.update(lobbyRef, "firstPlayersPerTurn", updatedMap)
+
+                val selectedSnap = transaction.get(playersCollection.document(selectedPlayerId))
+                val selectedPlayer = selectedSnap.toObject(Player::class.java)
+                    ?: throw Exception("Selected player not found")
+                return@runTransaction selectedPlayer.name
+            }.addOnSuccessListener { result ->
+                continuation.resume(result)
+            }.addOnFailureListener { exception ->
+                continuation.resumeWith(Result.failure(exception))
+            }
+        }
+    }
+
+
+    override suspend fun getPlayersRanking(lobbyId: String): List<Pair<String, Int>> {
+        val lobbyPlayersSnapshot = lobbyPlayersCollection
+            .whereEqualTo("lobbyId", lobbyId)
+            .get()
+            .await()
+
+        val playerIds = lobbyPlayersSnapshot.documents.mapNotNull { it.getString("playerId") }
+
+        val playersSnapshot = playersCollection
+            .whereIn(FieldPath.documentId(), playerIds)
+            .get()
+            .await()
+
+        return playersSnapshot.documents.mapNotNull { doc ->
+            val name = doc.getString("name")
+            val points = doc.getLong("points")?.toInt()
+            if (name != null && points != null) name to points else null
+        }.sortedByDescending { it.second }
+    }
+
+    override suspend fun resetLobby(lobbyId: String) {
+        val lobbyRef = db.collection("lobbies").document(lobbyId)
+
+        lobbyRef.update(
+            mapOf(
+                "isFirstPlayerAssigned" to false,
+                "isStarted" to false,
+                "isTimeFinished" to false
+            )
+        ).await()
+    }
+
+    override suspend fun endCurrentTurn(lobbyId: String) {
+        val lobbyRef = lobbiesCollection.document(lobbyId)
+        db.runTransaction { transaction ->
+            val snap = transaction.get(lobbyRef)
+            val lobby = snap.toObject(Lobby::class.java) ?: return@runTransaction
+            val nextTurn = (lobby.currentTurn) + 1
+
+            transaction.update(lobbyRef, mapOf(
+                "currentTurn" to nextTurn,
+                "isFirstPlayerAssigned" to false,
+                "firstPlayerId" to null,
+                "assignedTurn" to -1
+            ))
+        }.await()
+    }
+
+    override suspend fun orderFirstPlayers(lobbyId: String, players: List<Player>) {
+        val shuffled = players.shuffled()
+
+        val orderList = shuffled.mapIndexed { index, player ->
+            FirstPlayerOrderEntry(playerId = player.id, order = index)
+        }
+
+        val firstPlayerOrder = FirstPlayerOrder(
+            lobbyId = lobbyId,
+            orderList = orderList,
+            currentTurnIndex = 0
+        )
+
+        firstPlayerOrdersCollection.document(lobbyId).set(firstPlayerOrder)
+    }
+
+    override suspend fun getPlayerIdByOrder(lobbyId: String): String? {
+        val snapshot = firstPlayerOrdersCollection.document(lobbyId).get().await()
+        val data = snapshot.toObject(FirstPlayerOrder::class.java)
+        val currentTurnIndex = data?.currentTurnIndex ?: 0
+
+        // Trouver le joueur correspondant au tour actuel
+        val playerId = data?.orderList?.firstOrNull { it.order == currentTurnIndex }?.playerId
+        return playerId
+    }
+
+    override suspend fun incrementCurrentTurnIndex(lobbyId: String) {
+        val snapshot = firstPlayerOrdersCollection.document(lobbyId).get().await()
+        val data = snapshot.toObject(FirstPlayerOrder::class.java)
+
+        val currentTurnIndex = data?.currentTurnIndex ?: 0
+        val newTurnIndex = currentTurnIndex + 1
+        firstPlayerOrdersCollection.document(lobbyId).update("currentTurnIndex", newTurnIndex)
+    }
+
 
 }
 

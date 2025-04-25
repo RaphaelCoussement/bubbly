@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.raphou.bubbly.domain.home.IUserPreferencesRepository
 import org.raphou.bubbly.domain.lobby.ILobbyRepository
 import org.raphou.bubbly.domain.lobby.Lobby
 import org.raphou.bubbly.domain.lobby.Player
@@ -20,6 +21,8 @@ import java.util.UUID
 class JoinLobbyScreenViewModel() : ViewModel(), KoinComponent {
 
     private val lobbyRepository: ILobbyRepository by inject()
+
+    private val userPreferencesRepository: IUserPreferencesRepository by inject()
 
     private val _currentLobby: MutableStateFlow<Lobby?> = MutableStateFlow(null)
     val currentSession: StateFlow<Lobby?> = _currentLobby.asStateFlow()
@@ -33,16 +36,20 @@ class JoinLobbyScreenViewModel() : ViewModel(), KoinComponent {
     fun joinLobby(code: String) {
         viewModelScope.launch {
             try {
-                val session = lobbyRepository.joinLobby(code)
-                _currentLobby.value = session
+                val pseudo = userPreferencesRepository.getPseudo()
+                Log.d("JoinLobbyScreenVM", "🔥 pseudo : ${pseudo}")
+                if (pseudo != null) {
+                    val session = lobbyRepository.joinLobby(code, pseudo)
+                    _currentLobby.value = session
 
-                // Écoute les joueurs
-                lobbyRepository.listenToLobbyPlayers(session.id) { playerList ->
-                    _players.value = playerList
+                    // Écoute les joueurs
+                    lobbyRepository.listenToLobbyPlayers(session.id) { playerList ->
+                        _players.value = playerList
+                    }
+
+                    // Lance la vérification périodique
+                    listenForLobbyUpdates(session.id)
                 }
-
-                // Lance la vérification périodique
-                listenForLobbyUpdates(session.id)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

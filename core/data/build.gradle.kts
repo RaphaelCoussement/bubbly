@@ -37,9 +37,13 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
+    // pseudo
+    implementation("androidx.datastore:datastore-preferences:1.1.4")
+
     //DI
     implementation(platform(libs.koin.bom))
     implementation(libs.koin.core)
+    implementation(libs.koin.android)
 
     //Room
     implementation(libs.androidx.room.runtime)
