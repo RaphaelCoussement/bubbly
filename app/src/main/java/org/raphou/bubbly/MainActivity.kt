@@ -13,6 +13,7 @@ import androidx.navigation.navArgument
 import org.raphou.bubbly.game.FinalRankingScreen
 import org.raphou.bubbly.game.FirstPlayerScreen
 import org.raphou.bubbly.game.OtherPlayerScreen
+import org.raphou.bubbly.game.PlayersVoteScreen
 import org.raphou.bubbly.game.RankingScreen
 import org.raphou.bubbly.home.ChoosePseudoScreen
 import org.raphou.bubbly.home.CreateLobbyScreen
@@ -91,6 +92,13 @@ fun Content() {
             FinalRankingScreen(navController = navController, lobbyId = lobbyId)
         }
 
+        composable(
+            "game/{lobbyId}/best-story",
+            arguments = listOf(navArgument("lobbyId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val lobbyId = backStackEntry.arguments?.getString("lobbyId").orEmpty()
+            PlayersVoteScreen(navController = navController, lobbyId = lobbyId)
+        }
 
     }
 }

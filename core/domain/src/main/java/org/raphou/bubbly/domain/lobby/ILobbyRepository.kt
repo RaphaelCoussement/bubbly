@@ -23,4 +23,9 @@ interface ILobbyRepository {
     suspend fun orderFirstPlayers(lobbyId: String, players: List<Player>)
     suspend fun getPlayerIdByOrder(lobbyId: String): String?
     suspend fun incrementCurrentTurnIndex(lobbyId: String)
+    suspend fun voteForPlayer(lobbyId: String, voterId: String, votedPlayerId: String)
+    fun listenToVotes(lobbyId: String, onUpdate: (Map<String, Int>, Boolean) -> Unit)
+    suspend fun addPointsToWinners(lobbyId: String, winners: List<String>)
+    suspend fun resetVotes(lobbyId: String)
+
 }

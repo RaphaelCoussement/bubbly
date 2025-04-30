@@ -41,7 +41,7 @@ fun GameScreen(navController: NavController, lobbyId: String) {
         is GameScreenState.Finish -> {
             // Redirection vers le classement final
             LaunchedEffect(Unit) {
-                navController.navigate("game/$lobbyId/final-ranking")
+                navController.navigate("game/$lobbyId/best-story")
             }
         }
         else -> {
@@ -49,7 +49,7 @@ fun GameScreen(navController: NavController, lobbyId: String) {
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "bonjour")
+                CircularProgressIndicator(color = colorResource(id = R.color.orange_primary))
             }
         }
     }

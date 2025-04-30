@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material3.ExposedDropdownMenuDefaults.outlinedTextFieldColors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +25,7 @@ import kotlinx.coroutines.delay
 import org.raphou.bubbly.ui.R
 import org.raphou.bubbly.ui.R.string.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
     val viewModel: OtherPlayerScreenViewModel = viewModel()
@@ -100,6 +102,13 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
                     .padding(16.dp),
                 enabled = suggestions.size < 10,
                 isError = suggestionInput.value.text.isEmpty() && suggestions.size < 10,
+                colors = outlinedTextFieldColors(
+                    focusedBorderColor = colorResource(id = R.color.orange_primary),
+                    unfocusedBorderColor = colorResource(id = R.color.orange_primary),
+                    cursorColor = colorResource(id = R.color.orange_primary),
+                    focusedLabelColor = colorResource(id = R.color.orange_primary),
+                    unfocusedLabelColor = colorResource(id = R.color.orange_primary),
+                )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
