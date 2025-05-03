@@ -43,7 +43,7 @@ class FinalRankingScreenViewModel : ViewModel(), KoinComponent {
                 false // Pas autorisé à faire les suppressions
             }
         } catch (e: Exception) {
-            false // En cas d'erreur
+            false
         }
     }
 }

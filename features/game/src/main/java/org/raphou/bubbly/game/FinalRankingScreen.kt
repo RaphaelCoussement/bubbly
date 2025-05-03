@@ -102,7 +102,6 @@ fun FinalRankingScreen(navController: NavController, lobbyId: String) {
             }
         }
 
-        // 🏠 FloatingActionButton en bas
         FloatingActionButton(
             onClick = {
                 coroutineScope.launch {

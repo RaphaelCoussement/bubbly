@@ -71,6 +71,7 @@ class JoinLobbyScreenViewModel() : ViewModel(), KoinComponent {
     }
 
     fun stopListeningToLobbyPlayers() {
+        // arrete l'écoute une fois que l'on navigue
         lobbyRepository.stopListeningToLobbyPlayers()
     }
 

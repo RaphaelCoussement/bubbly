@@ -568,6 +568,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
         votesCollection.document(lobbyId).delete().await()
     }
 
+    // toutes les méthodes de nettoyage des infos reliées à un lobby/player
     override suspend fun clearPlayersVotes(lobbyId: String?) {
         if (lobbyId.isNullOrBlank()) return
         val collection = db.collection("players_votes")
@@ -645,8 +646,6 @@ class LobbyRepositoryImpl : ILobbyRepository {
 
         return lastPlayer?.get("playerId") as? String
     }
-
-
 
 }
 
