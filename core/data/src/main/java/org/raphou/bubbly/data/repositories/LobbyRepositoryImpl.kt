@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +30,8 @@ class LobbyRepositoryImpl : ILobbyRepository {
     private val lobbyPlayersCollection = db.collection("lobby_players")
     private val firstPlayerOrdersCollection = db.collection("first_player_orders")
     private val votesCollection = db.collection("votes")
+
+    private var playersListenerRegistration: ListenerRegistration? = null
 
     override suspend fun setIsTimeFinished(lobbyId: String) {
         val lobbyRef = lobbiesCollection.document(lobbyId)
@@ -166,6 +169,18 @@ class LobbyRepositoryImpl : ILobbyRepository {
                 throw LobbyException.PlayerNotFound("Aucun joueur trouvé avec le pseudo $pseudo")
             }
 
+            // Vérification si le joueur est déjà dans le lobby
+            val existingPlayerQuerySnapshot = lobbyPlayersCollection
+                .whereEqualTo("lobbyId", lobby.id)
+                .whereEqualTo("playerId", player.id)
+                .get()
+                .await()
+
+            if (!existingPlayerQuerySnapshot.isEmpty) {
+                // Si une entrée existe déjà, on ne fait rien
+                return lobby
+            }
+
             // Associer le joueur au lobby dans la collection 'lobby_players'
             try {
                 val lobbyPlayerData = mapOf(
@@ -190,41 +205,34 @@ class LobbyRepositoryImpl : ILobbyRepository {
     }
 
     override fun listenToLobbyPlayers(lobbyId: String, onUpdate: (List<Player>) -> Unit) {
-        GlobalScope.launch(Dispatchers.Main) {
-            try {
-                lobbyPlayersCollection
-                    .whereEqualTo("lobbyId", lobbyId)
-                    .addSnapshotListener { snapshot, e ->
-                        if (e != null) {
-                            Log.w("LobbyRepository", "Erreur lors de l'écoute des joueurs", e)
-                            throw LobbyException.LobbyNotFound("Lobby avec l'id $lobbyId non trouvé")
-                        }
+        playersListenerRegistration = lobbyPlayersCollection
+            .whereEqualTo("lobbyId", lobbyId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    Log.w("LobbyRepository", "Erreur lors de l'écoute des joueurs", e)
+                    return@addSnapshotListener
+                }
 
-                        GlobalScope.launch(Dispatchers.IO) {
-                            try {
-                                val players = snapshot?.documents?.mapNotNull { document ->
-                                    val playerId = document.getString("playerId")
-                                    playerId?.let {
-                                        val playerSnapshot = playersCollection.document(it).get().await()
-                                        playerSnapshot.toObject(Player::class.java)
-                                    }
-                                }?.filterIsInstance<Player>().orEmpty()
-
-                                if (players.isEmpty()) {
-                                    throw LobbyException.PlayerJoinFailed("Aucun joueur trouvé pour le lobby $lobbyId")
-                                }
-
-                                onUpdate(players)
-                            } catch (playerException: Exception) {
-                                Log.e("LobbyRepository", "Erreur lors de la récupération des joueurs", playerException)
+                GlobalScope.launch(Dispatchers.IO) {
+                    try {
+                        val players = snapshot?.documents?.mapNotNull { document ->
+                            val playerId = document.getString("playerId")
+                            playerId?.let {
+                                val playerSnapshot = playersCollection.document(it).get().await()
+                                playerSnapshot.toObject(Player::class.java)
                             }
-                        }
+                        }?.filterIsInstance<Player>().orEmpty()
+                        onUpdate(players)
+                    } catch (playerException: Exception) {
+                        Log.e("LobbyRepository", "Erreur lors de la récupération des joueurs", playerException)
                     }
-            } catch (e: Exception) {
-                Log.e("LobbyRepository", "Erreur lors de l'écoute des joueurs", e)
-                throw LobbyException.LobbyNotFound("Erreur lors de l'écoute des joueurs du lobby $lobbyId")
+                }
             }
-        }
+    }
+
+    override fun stopListeningToLobbyPlayers() {
+        playersListenerRegistration?.remove()
+        playersListenerRegistration = null
     }
 
     override suspend fun addPlayerToLobby(lobbyId: String, player: Player) {
@@ -559,6 +567,85 @@ class LobbyRepositoryImpl : ILobbyRepository {
     override suspend fun resetVotes(lobbyId: String) {
         votesCollection.document(lobbyId).delete().await()
     }
+
+    override suspend fun clearPlayersVotes(lobbyId: String?) {
+        if (lobbyId.isNullOrBlank()) return
+        val collection = db.collection("players_votes")
+        val querySnapshot = collection.whereEqualTo("lobbyId", lobbyId).get().await()
+        for (document in querySnapshot.documents) {
+            document.reference.delete().await()
+        }
+    }
+
+    override suspend fun clearVotes(lobbyId: String?) {
+        if (lobbyId.isNullOrBlank()) return
+        val collection = db.collection("votes")
+        val querySnapshot = collection.whereEqualTo("lobbyId", lobbyId).get().await()
+        for (document in querySnapshot.documents) {
+            document.reference.delete().await()
+        }
+    }
+
+    override suspend fun clearLobbyPlayers(lobbyId: String?) {
+        if (lobbyId.isNullOrBlank()) return
+        val collection = db.collection("lobby_players")
+        val querySnapshot = collection.whereEqualTo("lobbyId", lobbyId).get().await()
+        for (document in querySnapshot.documents) {
+            document.reference.delete().await()
+        }
+    }
+
+    override suspend fun deleteLobby(lobbyId: String?) {
+        if (lobbyId.isNullOrBlank()) return
+        val document = db.collection("lobbies").document(lobbyId)
+        document.delete().await()
+    }
+
+    override suspend fun deleteFirstPlayerOrder(lobbyId: String?) {
+        if (lobbyId.isNullOrBlank()) return
+        val collection = db.collection("first_player_orders")
+        val querySnapshot = collection.whereEqualTo("lobbyId", lobbyId).get().await()
+        for (document in querySnapshot.documents) {
+            document.reference.delete().await()
+        }
+    }
+
+    override suspend fun resetPlayersPoints(lobbyId: String?) {
+        if (lobbyId.isNullOrBlank()) return
+        val lobbyPlayersCollection = db.collection("lobby_players")
+        val playersCollection = db.collection("players")
+
+        val querySnapshot = lobbyPlayersCollection
+            .whereEqualTo("lobbyId", lobbyId)
+            .get()
+            .await()
+
+        for (document in querySnapshot.documents) {
+            val playerId = document.getString("playerId")
+            if (playerId != null) {
+                val playerDoc = playersCollection.document(playerId)
+                playerDoc.update("points", 0).await()
+            }
+        }
+    }
+
+    override suspend fun getLastFirstPlayerId(lobbyId: String): String? {
+        val snapshot = db.collection("first_player_orders")
+            .whereEqualTo("lobbyId", lobbyId)
+            .get()
+            .await()
+
+        if (snapshot.isEmpty) return null
+
+        val document = snapshot.documents.first()
+
+        val orderList = document.get("orderList") as? List<Map<String, Any>> ?: return null
+
+        val lastPlayer = orderList.maxByOrNull { it["order"] as? Long ?: 0L }
+
+        return lastPlayer?.get("playerId") as? String
+    }
+
 
 
 }

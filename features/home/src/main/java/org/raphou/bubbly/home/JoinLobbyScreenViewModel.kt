@@ -64,9 +64,14 @@ class JoinLobbyScreenViewModel() : ViewModel(), KoinComponent {
             if (updatedLobby.isStarted) {
                 Log.d("JoinLobbyScreenVM", "youpi")
                 // Envoie l'ID du lobby dans le channel
+                stopListeningToLobbyPlayers()
                 _navigateToGameChannel.trySend(updatedLobby.id)
             }
         }
+    }
+
+    fun stopListeningToLobbyPlayers() {
+        lobbyRepository.stopListeningToLobbyPlayers()
     }
 
     suspend fun getThemeIdByCode(code: String): String {
