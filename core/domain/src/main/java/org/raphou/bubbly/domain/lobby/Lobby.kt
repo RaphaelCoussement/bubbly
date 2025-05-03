@@ -15,7 +15,8 @@ data class Lobby(
     @PropertyName("isLastTurnInProgress") @JvmField val isLastTurnInProgress: Boolean = false,
     @PropertyName("currentTurn") @JvmField val currentTurn: Long = 0,
     @PropertyName("assignedTurn") @JvmField val assignedTurn: Long = -1,
-    val firstPlayersPerTurn: Map<String, String>? = null
+    val firstPlayersPerTurn: Map<String, String>? = null,
+    val themeId: String? = null,
 )
 
 

@@ -63,25 +63,42 @@ fun Content() {
             JoinLobbyScreen(navController = navController, code = code)
         }
 
-        composable("createLobby") { backStackEntry ->
-            val code = backStackEntry.arguments?.getString("code").orEmpty()
-            CreateLobbyScreen(navController = navController)
+        composable(
+            "createLobby/{themeId}",
+            arguments = listOf(navArgument("themeId") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            })
+        ) { backStackEntry ->
+            val themeId = backStackEntry.arguments?.getString("themeId")
+            CreateLobbyScreen(navController = navController, themeId = themeId)
         }
 
         composable(
-            "game/{lobbyId}",
-            arguments = listOf(navArgument("lobbyId") { type = NavType.StringType })
+            "game/{lobbyId}/theme/{themeId}",
+            arguments = listOf(
+                navArgument("lobbyId") { type = NavType.StringType },
+                navArgument("themeId") { type = NavType.StringType; nullable = true }  // Permet themeId d’être nullable
+            )
         ) { backStackEntry ->
             val lobbyId = backStackEntry.arguments?.getString("lobbyId").orEmpty()
-            GameScreen(navController = navController, lobbyId = lobbyId)
+            val themeId = backStackEntry.arguments?.getString("themeId") // themeId peut être null
+
+            GameScreen(navController = navController, lobbyId = lobbyId, themeId = themeId)
         }
 
         composable(
-            "game/{lobbyId}/ranking",
-            arguments = listOf(navArgument("lobbyId") { type = NavType.StringType })
+            "game/{lobbyId}/ranking/{themeId}",
+            arguments = listOf(
+                navArgument("lobbyId") { type = NavType.StringType },
+                navArgument("themeId") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
             val lobbyId = backStackEntry.arguments?.getString("lobbyId").orEmpty()
-            RankingScreen(navController = navController, lobbyId = lobbyId)
+            val themeId = backStackEntry.arguments?.getString("themeId").orEmpty()  // Récupère themeId de la route
+
+            RankingScreen(navController = navController, lobbyId = lobbyId, themeId = themeId)
         }
 
         composable(

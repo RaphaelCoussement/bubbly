@@ -31,7 +31,7 @@ import org.raphou.bubbly.ui.R.color.orange_primary
 import org.raphou.bubbly.ui.R.string.*
 
 @Composable
-fun RankingScreen(navController: NavController, lobbyId: String) {
+fun RankingScreen(navController: NavController, lobbyId: String, themeId: String) {
     val viewModel: RankingScreenViewModel = viewModel()
     val ranking = viewModel.ranking.value
 
@@ -43,7 +43,9 @@ fun RankingScreen(navController: NavController, lobbyId: String) {
         delay(3000)
         viewModel.endCurrentTurn(lobbyId)
         viewModel.resetLobbyAfterRanking(lobbyId)
-        navController.navigate("game/$lobbyId")
+        navController.navigate("game/$lobbyId/theme/$themeId") {
+            popUpTo(0) { inclusive = true }
+        }
     }
 
 

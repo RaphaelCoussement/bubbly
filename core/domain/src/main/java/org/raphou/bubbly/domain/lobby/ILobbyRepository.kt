@@ -1,7 +1,7 @@
 package org.raphou.bubbly.domain.lobby
 
 interface ILobbyRepository {
-    suspend fun createLobby(): Lobby
+    suspend fun createLobby(themeId: String?): Lobby
     suspend fun joinLobby(code: String, pseudo: String): Lobby
     fun listenToLobbyPlayers(lobbyId: String, onUpdate: (List<Player>) -> Unit)
     suspend fun addPlayerToLobby(lobbyId: String, player: Player)

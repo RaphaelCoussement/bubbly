@@ -27,7 +27,7 @@ import org.raphou.bubbly.ui.R.string.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
+fun OtherPlayerScreen(navController: NavController, lobbyId: String, themeId: String?) {
     val viewModel: OtherPlayerScreenViewModel = viewModel()
     val suggestions by viewModel.suggestions
     val wordsToFind by viewModel.wordsToFind
@@ -35,7 +35,7 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
     val score by viewModel.score
     val suggestionInput = remember { mutableStateOf(TextFieldValue()) }
 
-    val totalTime = 30
+    val totalTime = 35
     var timeLeft by remember { mutableStateOf(totalTime) }
     var isNavigation by remember { mutableStateOf(false) }
 
@@ -60,7 +60,9 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
         }
 
         if (isNavigation) {
-            navController.navigate("game/$lobbyId/ranking")
+            navController.navigate("game/$lobbyId/ranking/${themeId ?: "default"}") {
+                popUpTo(0) { inclusive = true }
+            }
         }
     }
 

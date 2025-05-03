@@ -68,4 +68,14 @@ class JoinLobbyScreenViewModel() : ViewModel(), KoinComponent {
             }
         }
     }
+
+    suspend fun getThemeIdByCode(code: String): String {
+        return try {
+            val lobby = lobbyRepository.getLobbyByCode(code)
+            lobby.themeId ?: "default"
+        } catch (e: Exception) {
+            Log.e("JoinLobbyScreenVM", "Erreur lors de la récupération du thème", e)
+            "default"
+        }
+    }
 }

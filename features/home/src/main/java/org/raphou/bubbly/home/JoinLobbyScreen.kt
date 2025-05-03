@@ -21,7 +21,10 @@ fun JoinLobbyScreen(navController: NavHostController, code: String) {
 
     LaunchedEffect(navigateToGame) {
         navigateToGame?.let {
-            navController.navigate("game/${lobby?.id}")
+            val themeId = viewModel.getThemeIdByCode(code)
+            navController.navigate("game/${lobby?.id}/theme/$themeId") {
+                popUpTo(0) { inclusive = true }
+            }
         }
     }
 

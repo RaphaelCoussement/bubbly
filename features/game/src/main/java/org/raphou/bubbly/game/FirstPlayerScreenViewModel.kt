@@ -1,5 +1,6 @@
 package org.raphou.bubbly.game
 
+import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -30,10 +31,15 @@ class FirstPlayerScreenViewModel : ViewModel(), KoinComponent {
     val score: StateFlow<Int> get() = _score
 
 
-    fun fetchWords(lobbyId: String) {
+    fun fetchWords(lobbyId: String, themeId: String?) {
+        Log.d("fetchWords", "themeID : $themeId")
         viewModelScope.launch {
+            // Si themeId est "default", on le remplace par null
+            val finalThemeId = if (themeId == "default") null else themeId
+
+            // On passe le thème modifié à la fonction getRandomWords
             wordRepository.initializeWords()
-            val selectedWords = wordRepository.getRandomWords(null, lobbyId)
+            val selectedWords = wordRepository.getRandomWords(finalThemeId, lobbyId)
             _words.value = selectedWords
             checkWordStatus(lobbyId)
         }

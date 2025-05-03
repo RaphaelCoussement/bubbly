@@ -44,9 +44,9 @@ class CreateLobbyScreenViewModel() : ViewModel(), KoinComponent {
         }
     }
 
-    fun createLobby() {
+    fun createLobby(themeId: String?) {
         viewModelScope.launch {
-            val session = lobbyRepository.createLobby()
+            val session = lobbyRepository.createLobby(themeId)
             _currentLobby.value = session
             lobbyRepository.listenToLobbyPlayers(session.id) { playerList ->
                 _players.value = playerList

@@ -17,7 +17,7 @@ import org.raphou.bubbly.ui.R
 
 
 @Composable
-fun CreateLobbyScreen(navController: NavHostController) {
+fun CreateLobbyScreen(navController: NavHostController, themeId: String?) {
     val viewModel: CreateLobbyScreenViewModel = viewModel()
     val lobby = viewModel.currentSession.collectAsState().value
     val players by viewModel.players.collectAsState()
@@ -25,12 +25,21 @@ fun CreateLobbyScreen(navController: NavHostController) {
 
     LaunchedEffect(gameStartedEvent) {
         gameStartedEvent?.let {
-            navController.navigate("game/${lobby?.id}")
+            // Vérifie que themeId n'est pas null avant de naviguer
+            themeId?.let { id ->
+                navController.navigate("game/${lobby?.id}/theme/$id") {
+                    popUpTo(0) { inclusive = true }
+                }
+            } ?: run {
+                navController.navigate("game/${lobby?.id}/theme/default") {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
         }
     }
 
     LaunchedEffect(Unit) {
-        viewModel.createLobby()
+        viewModel.createLobby(themeId)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {

@@ -26,7 +26,7 @@ import org.raphou.bubbly.ui.R
 import org.raphou.bubbly.ui.R.string.*
 
 @Composable
-fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
+fun FirstPlayerScreen(navController: NavController, lobbyId: String, themeId: String?) {
     val viewModel: FirstPlayerScreenViewModel = viewModel()
     val words by viewModel.words
     val foundWords by viewModel.foundWords.collectAsState()
@@ -34,7 +34,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(lobbyId) {
-        viewModel.fetchWords(lobbyId)
+        viewModel.fetchWords(lobbyId, themeId)
     }
 
     LaunchedEffect(lobbyId) {
@@ -45,11 +45,11 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
     }
 
     // Timer
-    var timeLeft by remember { mutableStateOf(30) }
+    var timeLeft by remember { mutableStateOf(35) }
     var showFloatingButton by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        object : CountDownTimer(30_000, 1_000) {
+        object : CountDownTimer(35_000, 1_000) {
             override fun onTick(millisUntilFinished: Long) {
                 timeLeft = (millisUntilFinished / 1_000).toInt()
             }
@@ -140,7 +140,9 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
                 onClick = {
                     viewModel.setIsTimeFinished(lobbyId)
                     viewModel.onPlayerTurnFinished(lobbyId)
-                    navController.navigate("game/$lobbyId/ranking")
+                    navController.navigate("game/$lobbyId/ranking/${themeId ?: "default"}") {
+                        popUpTo(0) { inclusive = true }
+                    }
                 },
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
@@ -169,6 +171,9 @@ fun WordCard(word: Word, index: Int, isFound: Boolean) {
     }
     val textColor = if (isFound) Color.DarkGray else if (index % 2 == 0) Color.White else Color(0xFF4A4A4A)
 
+    val difficulties = listOf("FACILE", "MOYEN", "DIFFICILE", "EXTREME")
+    val difficulty = difficulties.getOrNull(index) ?: "INCONNUE"
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -190,7 +195,7 @@ fun WordCard(word: Word, index: Int, isFound: Boolean) {
                 color = textColor
             )
             Text(
-                text = word.difficulty.name,
+                text = difficulty,
                 style = MaterialTheme.typography.bodyMedium,
                 color = textColor
             )

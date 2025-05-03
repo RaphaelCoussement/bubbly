@@ -120,7 +120,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
         }
     }
 
-    override suspend fun createLobby(): Lobby {
+    override suspend fun createLobby(themeId: String?): Lobby {
         return try {
             var code: String
             do {
@@ -129,7 +129,8 @@ class LobbyRepositoryImpl : ILobbyRepository {
             } while (!existingLobbies.isEmpty) // Vérifie que le code n'est pas déjà utilisé
 
             val lobbyId = UUID.randomUUID().toString()
-            val lobby = Lobby(id = lobbyId, code = code, players = emptyList(), firstPlayerId = "", isStarted = false, isFirstPlayerAssigned = false, isTimeFinished = false, isAllFirstPlayer = false, firstPlayersIds = emptyList(), isLastTurnInProgress = false)
+            val finalThemeId = themeId ?: "default"
+            val lobby = Lobby(id = lobbyId, code = code, players = emptyList(), firstPlayerId = "", isStarted = false, isFirstPlayerAssigned = false, isTimeFinished = false, isAllFirstPlayer = false, firstPlayersIds = emptyList(), isLastTurnInProgress = false, themeId = finalThemeId)
             lobbiesCollection.document(lobbyId).set(lobby).await()
 
             lobby
