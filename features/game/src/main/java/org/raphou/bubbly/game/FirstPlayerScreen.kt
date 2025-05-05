@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -47,25 +48,30 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String, themeId: St
     // Timer
     var timeLeft by remember { mutableStateOf(35) }
     var showFloatingButton by remember { mutableStateOf(false) }
+    var isTimerStarted by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        object : CountDownTimer(35_000, 1_000) {
-            override fun onTick(millisUntilFinished: Long) {
-                timeLeft = (millisUntilFinished / 1_000).toInt()
-            }
-
-            override fun onFinish() {
-                timeLeft = 0
-                showFloatingButton = true
-                Log.d("FirstPlayerScreen", "Timer finished, showFloatingButton = $showFloatingButton")
-
-                coroutineScope.launch {
-                    viewModel.fetchFinalScore(lobbyId = lobbyId)
+    // Start the timer only when words are loaded
+    LaunchedEffect(words) {
+        if (words.isNotEmpty()) {
+            viewModel.isTimeStarted(lobbyId)
+            object : CountDownTimer(35_000, 1_000) {
+                override fun onTick(millisUntilFinished: Long) {
+                    timeLeft = (millisUntilFinished / 1_000).toInt()
                 }
-            }
-        }.start()
-    }
 
+                override fun onFinish() {
+                    timeLeft = 0
+                    showFloatingButton = true
+                    Log.d("FirstPlayerScreen", "Timer finished, showFloatingButton = $showFloatingButton")
+
+                    coroutineScope.launch {
+                        viewModel.fetchFinalScore(lobbyId = lobbyId)
+                    }
+                }
+            }.start()
+            isTimerStarted = true
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -121,7 +127,8 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String, themeId: St
                             style = MaterialTheme.typography.headlineMedium,
                             modifier = Modifier
                                 .padding(16.dp)
-                                .align(Alignment.CenterHorizontally),
+                                .fillMaxWidth(), // indispensable pour que textAlign fonctionne bien
+                            textAlign = TextAlign.Center,
                             color = colorResource(id = R.color.white)
                         )
                     }
@@ -161,8 +168,6 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String, themeId: St
         }
     }
 }
-
-
 
 @Composable
 fun WordCard(word: Word, index: Int, isFound: Boolean) {

@@ -38,13 +38,26 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String, themeId: St
     val totalTime = 35
     var timeLeft by remember { mutableStateOf(totalTime) }
     var isNavigation by remember { mutableStateOf(false) }
+    var timerStarted by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        while (timeLeft > 0) {
+    LaunchedEffect(lobbyId) {
+        while (!timerStarted) {
             delay(1000L)
-            timeLeft--
+            val started = viewModel.isTimeStarted(lobbyId)
+            if (started) {
+                timerStarted = true
+            }
         }
-        viewModel.setTimeUp()
+    }
+
+    LaunchedEffect(timerStarted) {
+        if (timerStarted) {
+            while (timeLeft > 0) {
+                delay(1000L)
+                timeLeft--
+            }
+            viewModel.setTimeUp()
+        }
     }
 
     LaunchedEffect(isTimeUp) {
@@ -60,9 +73,8 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String, themeId: St
         }
 
         if (isNavigation) {
-            navController.navigate("game/$lobbyId/ranking/${themeId ?: "default"}") {
-                popUpTo(0) { inclusive = true }
-            }
+            // Inclure themeId dans la navigation vers "ranking"
+            navController.navigate("game/$lobbyId/ranking/${themeId ?: "default"}")
         }
     }
 

@@ -61,6 +61,10 @@ class OtherPlayerScreenViewModel : ViewModel(), KoinComponent {
         _isTimeUp.value = true
     }
 
+    suspend fun isTimeStarted(lobbyId: String): Boolean {
+        return lobbyRepository.isTimerStarted(lobbyId)
+    }
+
     fun resetGame(lobbyId: String) {
         viewModelScope.launch {
             try {

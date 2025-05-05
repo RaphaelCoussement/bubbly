@@ -71,10 +71,16 @@ class CreateLobbyScreenViewModel() : ViewModel(), KoinComponent {
                     lobbyRepository.startLobby(lobby.id)
 
                     _players.value = currentPlayers
+
+                    stopListeningToLobbyPlayers()
+
                     _navigateToGame.value = lobby.id
                     _gameStartedEvent.send(Unit)
                 }
             }
         }
+    }
+    fun stopListeningToLobbyPlayers() {
+        lobbyRepository.stopListeningToLobbyPlayers()
     }
 }

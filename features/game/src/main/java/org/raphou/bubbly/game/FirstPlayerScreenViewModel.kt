@@ -75,6 +75,12 @@ class FirstPlayerScreenViewModel : ViewModel(), KoinComponent {
         }
     }
 
+    fun isTimeStarted(lobbyId: String){
+        viewModelScope.launch {
+            lobbyRepository.isTimeStarted(lobbyId)
+        }
+    }
+
     fun onPlayerTurnFinished(lobbyId: String) {
         viewModelScope.launch {
             try {

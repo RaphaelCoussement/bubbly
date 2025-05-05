@@ -38,6 +38,17 @@ class LobbyRepositoryImpl : ILobbyRepository {
         lobbyRef.update("isTimeFinished", true)
     }
 
+    override suspend fun isTimeStarted(lobbyId: String) {
+        val lobbyRef = lobbiesCollection.document(lobbyId)
+        lobbyRef.update("isTimeStarted", true)
+    }
+
+    override suspend fun isTimerStarted(lobbyId: String) : Boolean {
+        val lobbyRef = lobbiesCollection.document(lobbyId)
+        val docSnapshot = lobbyRef.get().await()
+        return docSnapshot.getBoolean("isTimeStarted") ?: false
+    }
+
     override suspend fun isTimeFinished(lobbyId: String): Boolean {
         val lobbyRef = lobbiesCollection.document(lobbyId)
         val docSnapshot = lobbyRef.get().await()
@@ -133,7 +144,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
 
             val lobbyId = UUID.randomUUID().toString()
             val finalThemeId = themeId ?: "default"
-            val lobby = Lobby(id = lobbyId, code = code, players = emptyList(), firstPlayerId = "", isStarted = false, isFirstPlayerAssigned = false, isTimeFinished = false, isAllFirstPlayer = false, firstPlayersIds = emptyList(), isLastTurnInProgress = false, themeId = finalThemeId)
+            val lobby = Lobby(id = lobbyId, code = code, players = emptyList(), firstPlayerId = "", isStarted = false, isFirstPlayerAssigned = false, isTimeFinished = false, isAllFirstPlayer = false, firstPlayersIds = emptyList(), isLastTurnInProgress = false, themeId = finalThemeId, isTimeStarted = false)
             lobbiesCollection.document(lobbyId).set(lobby).await()
 
             lobby
@@ -324,8 +335,6 @@ class LobbyRepositoryImpl : ILobbyRepository {
                     snapshot?.toObject(Lobby::class.java)?.let { lobby ->
                         onUpdate(lobby.copy(id = snapshot.id)) // Mise à jour du lobby avec son ID Firestore
                         Log.d("LobbyRepository", "🔥 Mise à jour en temps réel : $lobby")
-                    } ?: run {
-                        throw LobbyException.InvalidLobby("Le lobby avec ID $lobbyId est invalide ou introuvable.")
                     }
                 }
         } catch (e: FirebaseFirestoreException) {
@@ -434,6 +443,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
             mapOf(
                 "isFirstPlayerAssigned" to false,
                 "isStarted" to false,
+                "isTimeStarted" to false,
                 "isTimeFinished" to false
             )
         ).await()

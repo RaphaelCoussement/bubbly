@@ -17,6 +17,7 @@ data class Lobby(
     @PropertyName("assignedTurn") @JvmField val assignedTurn: Long = -1,
     val firstPlayersPerTurn: Map<String, String>? = null,
     val themeId: String? = null,
+    @PropertyName("isTimeStarted") @JvmField val isTimeStarted: Boolean = false,
 )
 
 
