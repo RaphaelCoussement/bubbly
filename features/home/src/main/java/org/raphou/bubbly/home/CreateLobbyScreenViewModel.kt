@@ -34,6 +34,9 @@ class CreateLobbyScreenViewModel() : ViewModel(), KoinComponent {
     private val _gameStartedEvent = Channel<Unit>(Channel.CONFLATED)
     val gameStartedEvent = _gameStartedEvent.receiveAsFlow()
 
+    private val _navigationEvent = Channel<CreateLobbyNavigationEvent>(Channel.BUFFERED)
+    val navigationEvent = _navigationEvent.receiveAsFlow()
+
     init {
         viewModelScope.launch {
             LobbyStateManager.isGameStarted.collectLatest { started ->
@@ -44,8 +47,11 @@ class CreateLobbyScreenViewModel() : ViewModel(), KoinComponent {
         }
     }
 
+    private var currentThemeId: String? = null
+
     fun createLobby(themeId: String?) {
         viewModelScope.launch {
+            currentThemeId = themeId
             val session = lobbyRepository.createLobby(themeId)
             _currentLobby.value = session
             lobbyRepository.listenToLobbyPlayers(session.id) { playerList ->
@@ -76,6 +82,8 @@ class CreateLobbyScreenViewModel() : ViewModel(), KoinComponent {
 
                     _navigateToGame.value = lobby.id
                     _gameStartedEvent.send(Unit)
+
+                    _navigationEvent.send(CreateLobbyNavigationEvent.NavigateToGame(lobby.id, currentThemeId))
                 }
             }
         }
@@ -83,4 +91,8 @@ class CreateLobbyScreenViewModel() : ViewModel(), KoinComponent {
     fun stopListeningToLobbyPlayers() {
         lobbyRepository.stopListeningToLobbyPlayers()
     }
+}
+
+sealed class CreateLobbyNavigationEvent {
+    data class NavigateToGame(val lobbyId: String, val themeId: String?) : CreateLobbyNavigationEvent()
 }

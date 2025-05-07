@@ -224,19 +224,34 @@ class LobbyRepositoryImpl : ILobbyRepository {
                     return@addSnapshotListener
                 }
 
-                GlobalScope.launch(Dispatchers.IO) {
-                    try {
-                        val players = snapshot?.documents?.mapNotNull { document ->
-                            val playerId = document.getString("playerId")
-                            playerId?.let {
-                                val playerSnapshot = playersCollection.document(it).get().await()
-                                playerSnapshot.toObject(Player::class.java)
+                val playerIds = snapshot?.documents?.mapNotNull { it.getString("playerId") }.orEmpty()
+                if (playerIds.isEmpty()) {
+                    onUpdate(emptyList())
+                    return@addSnapshotListener
+                }
+
+                // Préparer une liste pour stocker les joueurs récupérés
+                val players = mutableListOf<Player>()
+                var remaining = playerIds.size
+                for (playerId in playerIds) {
+                    playersCollection.document(playerId).get()
+                        .addOnSuccessListener { playerSnapshot ->
+                            val player = playerSnapshot.toObject(Player::class.java)
+                            if (player != null) {
+                                players.add(player)
                             }
-                        }?.filterIsInstance<Player>().orEmpty()
-                        onUpdate(players)
-                    } catch (playerException: Exception) {
-                        Log.e("LobbyRepository", "Erreur lors de la récupération des joueurs", playerException)
-                    }
+                            remaining--
+                            if (remaining == 0) {
+                                onUpdate(players)
+                            }
+                        }
+                        .addOnFailureListener { exception ->
+                            Log.e("LobbyRepository", "Erreur lors de la récupération du joueur $playerId", exception)
+                            remaining--
+                            if (remaining == 0) {
+                                onUpdate(players)
+                            }
+                        }
                 }
             }
     }
@@ -552,6 +567,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
                 }
         }
     }
+
     override suspend fun addPointsToWinners(lobbyId: String, winners: List<String>) {
         val lobbyPlayersRef = lobbyPlayersCollection
             .whereEqualTo("lobbyId", lobbyId)

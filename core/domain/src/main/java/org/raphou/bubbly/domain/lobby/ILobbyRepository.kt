@@ -37,5 +37,4 @@ interface ILobbyRepository {
     suspend fun resetPlayersPoints(lobbyId: String?)
     suspend fun isTimeStarted(lobbyId: String)
     suspend fun isTimerStarted(lobbyId: String): Boolean
-
 }

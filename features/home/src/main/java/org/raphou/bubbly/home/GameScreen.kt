@@ -41,8 +41,14 @@ fun GameScreen(navController: NavController, lobbyId: String, themeId: String?) 
         is GameScreenState.Finish -> {
             // Redirection vers le classement final
             LaunchedEffect(Unit) {
-                navController.navigate("game/$lobbyId/best-story") {
-                    popUpTo(0) { inclusive = true }
+                viewModel.navigationEvent.collect { event ->
+                    when (event) {
+                        is GameNavigationEvent.NavigateToBestStory -> {
+                            navController.navigate("game/${event.lobbyId}/best-story") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -103,7 +103,15 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String, themeId: St
             color = colorResource(id = R.color.orange_primary)
         )
 
-        LazyColumn(
+        if (words.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = colorResource(id = R.color.orange_primary))
+            }
+        } else {
+            LazyColumn(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -140,6 +148,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String, themeId: St
                 val isFound = foundWords[words[index].name] ?: false
                 WordCard(word = words[index], index = index, isFound = isFound)
             }
+        }
         }
 
         if (showFloatingButton) {

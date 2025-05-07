@@ -21,18 +21,15 @@ fun CreateLobbyScreen(navController: NavHostController, themeId: String?) {
     val viewModel: CreateLobbyScreenViewModel = viewModel()
     val lobby = viewModel.currentSession.collectAsState().value
     val players by viewModel.players.collectAsState()
-    val gameStartedEvent = viewModel.gameStartedEvent.collectAsState(initial = null).value
 
-    LaunchedEffect(gameStartedEvent) {
-        gameStartedEvent?.let {
-            // Vérifie que themeId n'est pas null avant de naviguer
-            themeId?.let { id ->
-                navController.navigate("game/${lobby?.id}/theme/$id") {
-                    popUpTo(0) { inclusive = true }
-                }
-            } ?: run {
-                navController.navigate("game/${lobby?.id}/theme/default") {
-                    popUpTo(0) { inclusive = true }
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                is CreateLobbyNavigationEvent.NavigateToGame -> {
+                    val finalThemeId = event.themeId ?: "default"
+                    navController.navigate("game/${event.lobbyId}/theme/$finalThemeId") {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             }
         }

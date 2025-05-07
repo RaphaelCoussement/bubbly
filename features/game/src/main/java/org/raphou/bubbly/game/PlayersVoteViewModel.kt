@@ -2,8 +2,10 @@ package org.raphou.bubbly.game
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -24,10 +26,21 @@ class PlayersVoteScreenViewModel : ViewModel(), KoinComponent {
     private val _allVotesReceived = MutableStateFlow(false)
     val allVotesReceived: StateFlow<Boolean> get() = _allVotesReceived
 
+    private val _uiEventChannel = Channel<PlayersVoteUiEvent>()
+    val uiEvent = _uiEventChannel.receiveAsFlow()
+
+
     fun listenToVotes(lobbyId: String) {
         lobbyRepository.listenToVotes(lobbyId) { votesMap, allVotes ->
             _votes.value = votesMap
             _allVotesReceived.value = allVotes
+
+            if (allVotes) {
+                viewModelScope.launch {
+                    // Envoie l'événement de navigation lorsque tous les votes sont reçus
+                    _uiEventChannel.send(PlayersVoteUiEvent.NavigateToFinalRanking)
+                }
+            }
         }
     }
 
@@ -60,3 +73,8 @@ class PlayersVoteScreenViewModel : ViewModel(), KoinComponent {
         }
     }
 }
+
+sealed class PlayersVoteUiEvent {
+    object NavigateToFinalRanking : PlayersVoteUiEvent()
+}
+

@@ -30,7 +30,7 @@ class JoinLobbyScreenViewModel() : ViewModel(), KoinComponent {
     private val _players: MutableStateFlow<List<Player>> = MutableStateFlow(emptyList())
     val players: StateFlow<List<Player>> = _players.asStateFlow()
 
-    private val _navigateToGameChannel = Channel<String?>()
+    private val _navigateToGameChannel = Channel<JoinLobbyNavigationEvent>()
     val navigateToGameChannel = _navigateToGameChannel.receiveAsFlow()
 
     fun joinLobby(code: String) {
@@ -63,9 +63,20 @@ class JoinLobbyScreenViewModel() : ViewModel(), KoinComponent {
 
             if (updatedLobby.isStarted) {
                 Log.d("JoinLobbyScreenVM", "youpi")
-                // Envoie l'ID du lobby dans le channel
                 stopListeningToLobbyPlayers()
-                _navigateToGameChannel.trySend(updatedLobby.id)
+
+                // Lancer une coroutine ici
+                viewModelScope.launch {
+                    val themeId = try {
+                        lobbyRepository.getLobbyByCode(updatedLobby.code).themeId ?: "default"
+                    } catch (e: Exception) {
+                        "default"
+                    }
+
+                    _navigateToGameChannel.trySend(
+                        JoinLobbyNavigationEvent.NavigateToGame(updatedLobby.id, themeId)
+                    )
+                }
             }
         }
     }
@@ -85,3 +96,8 @@ class JoinLobbyScreenViewModel() : ViewModel(), KoinComponent {
         }
     }
 }
+
+sealed class JoinLobbyNavigationEvent {
+    data class NavigateToGame(val lobbyId: String, val themeId: String) : JoinLobbyNavigationEvent()
+}
+

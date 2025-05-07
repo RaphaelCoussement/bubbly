@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import org.raphou.bubbly.domain.lobby.Player
 import org.raphou.bubbly.ui.R.color.beige_background
 import org.raphou.bubbly.ui.R.color.orange_primary
@@ -36,24 +37,32 @@ fun PlayersVoteScreen(
     var votedPlayerId by remember { mutableStateOf<String?>(null) }
     val allVotesReceived by viewModel.allVotesReceived.collectAsState()
 
+
     LaunchedEffect(lobbyId) {
         viewModel.listenToLobbyPlayers(lobbyId)
         viewModel.listenToVotes(lobbyId)
     }
 
-    LaunchedEffect(allVotesReceived) {
-        if (allVotesReceived && players.isNotEmpty() && winners.isEmpty()) {
-            val maxVotes = votes.values.maxOrNull() ?: 0
-            val winnerIds = votes.filterValues { it == maxVotes }.keys.toList()
-            winners = players.filter { it.id in winnerIds }
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collectLatest { event ->
+            when (event) {
+                is PlayersVoteUiEvent.NavigateToFinalRanking -> {
+                    // Logique pour naviguer vers le ranking final
+                    val maxVotes = votes.values.maxOrNull() ?: 0
+                    val winnerIds = votes.filterValues { it == maxVotes }.keys.toList()
+                    winners = players.filter { it.id in winnerIds }
 
-            viewModel.addPointsToWinners(lobbyId, winnerIds)
+                    viewModel.addPointsToWinners(lobbyId, winnerIds)
 
-            showWinners = true
+                    showWinners = true
 
-            delay(3000L)
-            navController.navigate("game/$lobbyId/final-ranking") {
-                popUpTo(0) { inclusive = true }
+                    // Délai pour montrer les gagnants avant de naviguer
+                    delay(3000L)
+                    navController.navigate("game/$lobbyId/final-ranking") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+                else -> {}
             }
         }
     }
