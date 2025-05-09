@@ -21,6 +21,7 @@ import org.raphou.bubbly.home.GameScreen
 import org.raphou.bubbly.home.HomeScreen
 import org.raphou.bubbly.home.JoinLobbyScreen
 import org.raphou.bubbly.home.RulesScreen
+import org.raphou.bubbly.home.SettingsScreen
 import org.raphou.bubbly.home.SplashScreen
 
 class MainActivity : ComponentActivity() {
@@ -54,6 +55,9 @@ fun Content() {
         }
         composable("rules") {
             RulesScreen(navController = navController)
+        }
+        composable("settings") {
+            SettingsScreen(navController = navController)
         }
         composable(
             "joinLobby/{code}",
