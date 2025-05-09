@@ -80,15 +80,14 @@ fun RulesScreen(navController: NavHostController) {
                     )
 
                     Text(
-                        text = "🔹 Points et défis",
+                        text = "🔹 Points",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
                     Text(
-                        text = "- Les mots trouvés rapportent des points et des gorgées à distribuer.\n" +
-                                "- Si aucun mot n'est deviné, le joueur actif fait un gage.\n" +
-                                "- Entre les manches, des défis permettent de gagner des points bonus.",
+                        text = "- Les mots trouvés rapportent des points et des gorgées à distribuer. \n" +
+                                "- Vous avez environ 30s pour deviner les mots.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color.Black
                     )
@@ -100,8 +99,8 @@ fun RulesScreen(navController: NavHostController) {
                         color = Color.Black
                     )
                     Text(
-                        text = "- Après 1 tour complet, le joueur avec le plus de points gagne.\n" +
-                                "- Une élection désigne la meilleure histoire (+2 points).",
+                        text = "- Après 1 tour complet, une élection désigne la meilleure histoire (+2 points).\n" +
+                                "- Le joueur avec le plus de points gagne.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color.Black
                     )

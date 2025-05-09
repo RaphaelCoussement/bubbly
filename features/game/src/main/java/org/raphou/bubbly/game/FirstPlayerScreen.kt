@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -26,7 +27,7 @@ import org.raphou.bubbly.ui.R
 import org.raphou.bubbly.ui.R.string.*
 
 @Composable
-fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
+fun FirstPlayerScreen(navController: NavController, lobbyId: String, themeId: String?) {
     val viewModel: FirstPlayerScreenViewModel = viewModel()
     val words by viewModel.words
     val foundWords by viewModel.foundWords.collectAsState()
@@ -34,7 +35,7 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(lobbyId) {
-        viewModel.fetchWords(lobbyId)
+        viewModel.fetchWords(lobbyId, themeId)
     }
 
     LaunchedEffect(lobbyId) {
@@ -45,27 +46,32 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
     }
 
     // Timer
-    var timeLeft by remember { mutableStateOf(30) }
+    var timeLeft by remember { mutableStateOf(35) }
     var showFloatingButton by remember { mutableStateOf(false) }
+    var isTimerStarted by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        object : CountDownTimer(30_000, 1_000) {
-            override fun onTick(millisUntilFinished: Long) {
-                timeLeft = (millisUntilFinished / 1_000).toInt()
-            }
-
-            override fun onFinish() {
-                timeLeft = 0
-                showFloatingButton = true
-                Log.d("FirstPlayerScreen", "Timer finished, showFloatingButton = $showFloatingButton")
-
-                coroutineScope.launch {
-                    viewModel.fetchFinalScore(lobbyId = lobbyId)
+    // Start the timer only when words are loaded
+    LaunchedEffect(words) {
+        if (words.isNotEmpty()) {
+            viewModel.isTimeStarted(lobbyId)
+            object : CountDownTimer(35_000, 1_000) {
+                override fun onTick(millisUntilFinished: Long) {
+                    timeLeft = (millisUntilFinished / 1_000).toInt()
                 }
-            }
-        }.start()
-    }
 
+                override fun onFinish() {
+                    timeLeft = 0
+                    showFloatingButton = true
+                    Log.d("FirstPlayerScreen", "Timer finished, showFloatingButton = $showFloatingButton")
+
+                    coroutineScope.launch {
+                        viewModel.fetchFinalScore(lobbyId = lobbyId)
+                    }
+                }
+            }.start()
+            isTimerStarted = true
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -97,7 +103,15 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
             color = colorResource(id = R.color.orange_primary)
         )
 
-        LazyColumn(
+        if (words.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = colorResource(id = R.color.orange_primary))
+            }
+        } else {
+            LazyColumn(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -121,7 +135,8 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
                             style = MaterialTheme.typography.headlineMedium,
                             modifier = Modifier
                                 .padding(16.dp)
-                                .align(Alignment.CenterHorizontally),
+                                .fillMaxWidth(), // indispensable pour que textAlign fonctionne bien
+                            textAlign = TextAlign.Center,
                             color = colorResource(id = R.color.white)
                         )
                     }
@@ -134,13 +149,16 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
                 WordCard(word = words[index], index = index, isFound = isFound)
             }
         }
+        }
 
         if (showFloatingButton) {
             FloatingActionButton(
                 onClick = {
                     viewModel.setIsTimeFinished(lobbyId)
                     viewModel.onPlayerTurnFinished(lobbyId)
-                    navController.navigate("game/$lobbyId/ranking")
+                    navController.navigate("game/$lobbyId/ranking/${themeId ?: "default"}") {
+                        popUpTo(0) { inclusive = true }
+                    }
                 },
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
@@ -160,14 +178,15 @@ fun FirstPlayerScreen(navController: NavController, lobbyId: String) {
     }
 }
 
-
-
 @Composable
 fun WordCard(word: Word, index: Int, isFound: Boolean) {
     val backgroundColor = if (isFound) Color.Gray.copy(alpha = 0.5f) else {
         if (index % 2 == 0) colorResource(id = R.color.orange_primary) else Color.White
     }
     val textColor = if (isFound) Color.DarkGray else if (index % 2 == 0) Color.White else Color(0xFF4A4A4A)
+
+    val difficulties = listOf("FACILE", "MOYEN", "DIFFICILE", "EXTREME")
+    val difficulty = difficulties.getOrNull(index) ?: "INCONNUE"
 
     Card(
         modifier = Modifier
@@ -190,7 +209,7 @@ fun WordCard(word: Word, index: Int, isFound: Boolean) {
                 color = textColor
             )
             Text(
-                text = word.difficulty.name,
+                text = difficulty,
                 style = MaterialTheme.typography.bodyMedium,
                 color = textColor
             )

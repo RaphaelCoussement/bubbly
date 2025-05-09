@@ -12,16 +12,19 @@ fun JoinLobbyScreen(navController: NavHostController, code: String) {
     val lobby = viewModel.currentSession.collectAsState().value
     val players = viewModel.players.collectAsState().value
 
-    // Collecte les événements de navigation
-    val navigateToGame = viewModel.navigateToGameChannel.collectAsState(initial = null).value
-
     LaunchedEffect(code) {
         viewModel.joinLobby(code)
     }
 
-    LaunchedEffect(navigateToGame) {
-        navigateToGame?.let {
-            navController.navigate("game/${lobby?.id}")
+    LaunchedEffect(true) {
+        viewModel.navigateToGameChannel.collect { event ->
+            when (event) {
+                is JoinLobbyNavigationEvent.NavigateToGame -> {
+                    navController.navigate("game/${event.lobbyId}/theme/${event.themeId}") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            }
         }
     }
 

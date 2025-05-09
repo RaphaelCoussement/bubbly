@@ -22,6 +22,7 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
     private val playerSuggestionsCollection = db.collection("player_suggestions")
     private val wordsSelectedCollection = db.collection("words_selected")
     private val playersCollection = db.collection("players")
+    private val themesCollection = db.collection("themes")
 
     override suspend fun initializeWords() {
         try {
@@ -59,74 +60,93 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
         return inputStream.bufferedReader().use { it.readText() }
     }
 
-    private fun parseWordsFromJson(jsonString: String): List<Word> {
-        val json = Json { ignoreUnknownKeys = true }
+    private suspend fun parseWordsFromJson(jsonString: String): List<Word> {
         val jsonObject = JSONObject(jsonString)
-
         val words = mutableListOf<Word>()
 
-        // Parcours des thèmes et des difficultés
-        jsonObject.keys().forEach { theme ->
-            val difficulties = jsonObject.getJSONObject(theme)
-            difficulties.keys().forEach { difficulty ->
-                val wordsArray = difficulties.getJSONArray(difficulty)
-                for (i in 0 until wordsArray.length()) {
-                    words.add(
-                        Word(
-                            name = wordsArray.getString(i),
-                            theme = theme,
-                            difficulty = Difficulty.valueOf(difficulty.toUpperCase())
-                        )
+        // On parcourt chaque thème dans le fichier JSON
+        for (themeName in jsonObject.keys()) {
+            val themeId = getThemeIdByName(themeName)
+
+            val wordsArray = jsonObject.getJSONArray(themeName)
+            for (i in 0 until wordsArray.length()) {
+                val wordName = wordsArray.getString(i)
+                words.add(
+                    Word(
+                        name = wordName,
+                        themeId = themeId
                     )
-                }
+                )
             }
         }
+
         return words
     }
 
-    private fun generateWordId(word: Word): String {
-        return "${word.theme}_${word.difficulty}_${word.name.hashCode()}"
+    private suspend fun getThemeIdByName(themeName: String): String {
+        val querySnapshot = themesCollection
+            .whereEqualTo("name", themeName)
+            .limit(1)
+            .get()
+            .await()
+
+        if (querySnapshot.isEmpty) {
+            throw WordException.WordParsingFailed("Thème '$themeName' introuvable dans Firestore.")
+        }
+
+        return querySnapshot.documents.first().id
     }
 
-    override suspend fun getRandomWords(theme: String?, lobbyId: String): List<Word> {
+    private fun generateWordId(word: Word): String {
+        return "${word.themeId}_${word.name.hashCode()}"
+    }
+
+    override suspend fun getRandomWords(themeId: String?, lobbyId: String): List<Word> {
         return try {
-            val difficulties = Difficulty.values()
-            val words = mutableListOf<Word>()
-
-            for (difficulty in difficulties) {
-                val query = if (theme != null) {
-                    wordsCollection.whereEqualTo("theme", theme).whereEqualTo("difficulty", difficulty.name)
-                } else {
-                    wordsCollection.whereEqualTo("difficulty", difficulty.name)
-                }
-
-                val result = query.get().await()
-                val wordsList = result.documents.mapNotNull { it.toObject(Word::class.java) }
-                if (wordsList.isNotEmpty()) {
-                    val selectedWord = wordsList[Random.nextInt(wordsList.size)]
-                    words.add(selectedWord)
-
-                    // Détermine les points en fonction de la difficulté
-                    val points = when (difficulty) {
-                        Difficulty.FACILE -> 1
-                        Difficulty.MOYEN -> 2
-                        Difficulty.DIFFICILE -> 3
-                        Difficulty.EXTREME -> 4
-                    }
-
-                    val chosenWord = mapOf(
-                        "lobbyId" to lobbyId,
-                        "word" to selectedWord.name,
-                        "difficulty" to difficulty.name,
-                        "points" to points,
-                        "isFound" to false,
-                        "firstPlayerId" to ""
-                    )
-
-                    wordsSelectedCollection.add(chosenWord).await()
-                }
+            // Récupérer tous les mots (filtrés par thème si nécessaire)
+            val query = if (themeId != null) {
+                wordsCollection.whereEqualTo("themeId", themeId)
+            } else {
+                wordsCollection
             }
-            words
+
+            val result = query.get().await()
+            val allWords = result.documents.mapNotNull { it.toObject(Word::class.java) }.toMutableList()
+
+            // On mélange la liste pour tirer au hasard sans doublon
+            allWords.shuffle()
+
+            // Nombre de mots à sélectionner (1 par difficulté)
+            val numberOfWords = Difficulty.values().size
+            val selectedWords = mutableListOf<Word>()
+
+            for (i in 0 until numberOfWords) {
+                if (i >= allWords.size) break // Sécurité : pas assez de mots
+
+                val word = allWords[i]
+                selectedWords.add(word)
+
+                val difficulty = Difficulty.values()[i]
+                val points = when (difficulty) {
+                    Difficulty.FACILE -> 1
+                    Difficulty.MOYEN -> 2
+                    Difficulty.DIFFICILE -> 3
+                    Difficulty.EXTREME -> 4
+                }
+
+                val chosenWord = mapOf(
+                    "lobbyId" to lobbyId,
+                    "word" to word.name,
+                    "difficulty" to difficulty.name,
+                    "points" to points,
+                    "isFound" to false,
+                    "firstPlayerId" to ""
+                )
+
+                wordsSelectedCollection.add(chosenWord).await()
+            }
+
+            selectedWords
         } catch (e: Exception) {
             Log.e("WordRepository", "Erreur lors de la récupération des mots", e)
             throw WordException.WordRetrievalFailed("Erreur lors de la récupération des mots depuis la base de données.", e)

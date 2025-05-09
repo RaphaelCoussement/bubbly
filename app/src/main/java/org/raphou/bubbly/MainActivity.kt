@@ -13,6 +13,7 @@ import androidx.navigation.navArgument
 import org.raphou.bubbly.game.FinalRankingScreen
 import org.raphou.bubbly.game.FirstPlayerScreen
 import org.raphou.bubbly.game.OtherPlayerScreen
+import org.raphou.bubbly.game.PlayersVoteScreen
 import org.raphou.bubbly.game.RankingScreen
 import org.raphou.bubbly.home.ChoosePseudoScreen
 import org.raphou.bubbly.home.CreateLobbyScreen
@@ -62,25 +63,42 @@ fun Content() {
             JoinLobbyScreen(navController = navController, code = code)
         }
 
-        composable("createLobby") { backStackEntry ->
-            val code = backStackEntry.arguments?.getString("code").orEmpty()
-            CreateLobbyScreen(navController = navController)
+        composable(
+            "createLobby/{themeId}",
+            arguments = listOf(navArgument("themeId") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            })
+        ) { backStackEntry ->
+            val themeId = backStackEntry.arguments?.getString("themeId")
+            CreateLobbyScreen(navController = navController, themeId = themeId)
         }
 
         composable(
-            "game/{lobbyId}",
-            arguments = listOf(navArgument("lobbyId") { type = NavType.StringType })
+            "game/{lobbyId}/theme/{themeId}",
+            arguments = listOf(
+                navArgument("lobbyId") { type = NavType.StringType },
+                navArgument("themeId") { type = NavType.StringType; nullable = true }  // Permet themeId d’être nullable
+            )
         ) { backStackEntry ->
             val lobbyId = backStackEntry.arguments?.getString("lobbyId").orEmpty()
-            GameScreen(navController = navController, lobbyId = lobbyId)
+            val themeId = backStackEntry.arguments?.getString("themeId") // themeId peut être null
+
+            GameScreen(navController = navController, lobbyId = lobbyId, themeId = themeId)
         }
 
         composable(
-            "game/{lobbyId}/ranking",
-            arguments = listOf(navArgument("lobbyId") { type = NavType.StringType })
+            "game/{lobbyId}/ranking/{themeId}",
+            arguments = listOf(
+                navArgument("lobbyId") { type = NavType.StringType },
+                navArgument("themeId") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
             val lobbyId = backStackEntry.arguments?.getString("lobbyId").orEmpty()
-            RankingScreen(navController = navController, lobbyId = lobbyId)
+            val themeId = backStackEntry.arguments?.getString("themeId").orEmpty()  // Récupère themeId de la route
+
+            RankingScreen(navController = navController, lobbyId = lobbyId, themeId = themeId)
         }
 
         composable(
@@ -91,6 +109,13 @@ fun Content() {
             FinalRankingScreen(navController = navController, lobbyId = lobbyId)
         }
 
+        composable(
+            "game/{lobbyId}/best-story",
+            arguments = listOf(navArgument("lobbyId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val lobbyId = backStackEntry.arguments?.getString("lobbyId").orEmpty()
+            PlayersVoteScreen(navController = navController, lobbyId = lobbyId)
+        }
 
     }
 }

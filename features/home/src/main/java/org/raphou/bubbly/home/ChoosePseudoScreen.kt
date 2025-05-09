@@ -18,7 +18,9 @@ import org.raphou.bubbly.home.R.string.choisis_ton_pseudo
 import org.raphou.bubbly.home.R.string.pseudo_vide_ou_d_j_pris
 import org.raphou.bubbly.ui.R
 import org.raphou.bubbly.ui.R.*
+import androidx.compose.material3.ExposedDropdownMenuDefaults.outlinedTextFieldColors
 
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("ResourceAsColor")
 @Composable
 fun ChoosePseudoScreen(navController: NavHostController) {
@@ -52,9 +54,12 @@ fun ChoosePseudoScreen(navController: NavHostController) {
             label = { Text("Ton pseudo") },
             isError = error,
             singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(color.orange_primary),
-                cursorColor = Color(color.orange_primary)
+            colors = outlinedTextFieldColors(
+                focusedBorderColor = colorResource(id = color.orange_primary),
+                unfocusedBorderColor = colorResource(id = color.orange_primary),
+                cursorColor = colorResource(id = color.orange_primary),
+                focusedLabelColor = colorResource(id = color.orange_primary),
+                unfocusedLabelColor = colorResource(id = color.orange_primary),
             )
         )
 

@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material3.ExposedDropdownMenuDefaults.outlinedTextFieldColors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,8 +25,9 @@ import kotlinx.coroutines.delay
 import org.raphou.bubbly.ui.R
 import org.raphou.bubbly.ui.R.string.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
+fun OtherPlayerScreen(navController: NavController, lobbyId: String, themeId: String?) {
     val viewModel: OtherPlayerScreenViewModel = viewModel()
     val suggestions by viewModel.suggestions
     val wordsToFind by viewModel.wordsToFind
@@ -33,16 +35,29 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
     val score by viewModel.score
     val suggestionInput = remember { mutableStateOf(TextFieldValue()) }
 
-    val totalTime = 30
+    val totalTime = 35
     var timeLeft by remember { mutableStateOf(totalTime) }
     var isNavigation by remember { mutableStateOf(false) }
+    var timerStarted by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        while (timeLeft > 0) {
+    LaunchedEffect(lobbyId) {
+        while (!timerStarted) {
             delay(1000L)
-            timeLeft--
+            val started = viewModel.isTimeStarted(lobbyId)
+            if (started) {
+                timerStarted = true
+            }
         }
-        viewModel.setTimeUp()
+    }
+
+    LaunchedEffect(timerStarted) {
+        if (timerStarted) {
+            while (timeLeft > 0) {
+                delay(1000L)
+                timeLeft--
+            }
+            viewModel.setTimeUp()
+        }
     }
 
     LaunchedEffect(isTimeUp) {
@@ -58,7 +73,8 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
         }
 
         if (isNavigation) {
-            navController.navigate("game/$lobbyId/ranking")
+            // Inclure themeId dans la navigation vers "ranking"
+            navController.navigate("game/$lobbyId/ranking/${themeId ?: "default"}")
         }
     }
 
@@ -100,6 +116,13 @@ fun OtherPlayerScreen(navController: NavController, lobbyId: String) {
                     .padding(16.dp),
                 enabled = suggestions.size < 10,
                 isError = suggestionInput.value.text.isEmpty() && suggestions.size < 10,
+                colors = outlinedTextFieldColors(
+                    focusedBorderColor = colorResource(id = R.color.orange_primary),
+                    unfocusedBorderColor = colorResource(id = R.color.orange_primary),
+                    cursorColor = colorResource(id = R.color.orange_primary),
+                    focusedLabelColor = colorResource(id = R.color.orange_primary),
+                    unfocusedLabelColor = colorResource(id = R.color.orange_primary),
+                )
             )
 
             Spacer(modifier = Modifier.height(16.dp))

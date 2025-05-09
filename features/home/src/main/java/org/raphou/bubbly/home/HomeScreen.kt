@@ -195,7 +195,10 @@ fun HomeScreen(navController: NavHostController) {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { /* Action sur le thème */ },
+                                .clickable {
+                                    val themeId = themes[index].id
+                                    navController.navigate("createLobby/$themeId")
+                                },
                             shape = RoundedCornerShape(8.dp),
                             colors = CardDefaults.cardColors(containerColor = Color.White)
                         ) {
@@ -217,7 +220,7 @@ fun HomeScreen(navController: NavHostController) {
             }
 
             FloatingActionButton(
-                onClick = { navController.navigate("createLobby") },
+                onClick = { navController.navigate("createLobby/null") },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(16.dp),

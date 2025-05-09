@@ -15,7 +15,7 @@ import org.raphou.bubbly.game.OtherPlayerScreen
 import org.raphou.bubbly.ui.R
 
 @Composable
-fun GameScreen(navController: NavController, lobbyId: String) {
+fun GameScreen(navController: NavController, lobbyId: String, themeId: String?) {
     val viewModel: GameScreenViewModel = viewModel()
     val screenState = viewModel.screenState.collectAsState()
 
@@ -33,15 +33,23 @@ fun GameScreen(navController: NavController, lobbyId: String) {
             }
         }
         is GameScreenState.FirstPlayer -> {
-            FirstPlayerScreen(navController = navController, lobbyId = lobbyId)
+            FirstPlayerScreen(navController = navController, lobbyId = lobbyId, themeId = themeId)
         }
         is GameScreenState.OtherPlayer -> {
-            OtherPlayerScreen(navController = navController, lobbyId = lobbyId)
+            OtherPlayerScreen(navController = navController, lobbyId = lobbyId, themeId = themeId)
         }
         is GameScreenState.Finish -> {
             // Redirection vers le classement final
             LaunchedEffect(Unit) {
-                navController.navigate("game/$lobbyId/final-ranking")
+                viewModel.navigationEvent.collect { event ->
+                    when (event) {
+                        is GameNavigationEvent.NavigateToBestStory -> {
+                            navController.navigate("game/${event.lobbyId}/best-story") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
+                    }
+                }
             }
         }
         else -> {
@@ -49,7 +57,7 @@ fun GameScreen(navController: NavController, lobbyId: String) {
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "bonjour")
+                CircularProgressIndicator(color = colorResource(id = R.color.orange_primary))
             }
         }
     }
