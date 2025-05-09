@@ -81,6 +81,7 @@ dependencies {
     implementation(libs.androidx.material3)
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("com.google.android.gms:play-services-ads:23.0.0")
 
     //DI
     implementation(platform(libs.koin.bom))

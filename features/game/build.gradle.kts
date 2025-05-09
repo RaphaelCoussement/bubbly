@@ -34,6 +34,7 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+
 }
 
 dependencies {
@@ -71,4 +72,6 @@ dependencies {
 
     //Navigation
     implementation(libs.androidx.navigation.compose)
+
+    implementation("com.google.android.gms:play-services-ads:23.0.0")
 }

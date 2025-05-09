@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bubbly">Bubbly</string>
+    <string name="histoire_de_jouer">Time to play!</string>
+    <string name="entrer_le_code_de_la_partie">Enter the game code</string>
+    <string name="themes_populaires">Popular themes</string>
+    <string name="retour">Back</string>
+    <string name="regles_du_jeu">Game rules</string>
+    <string name="info">Info</string>
+    <string name="qr_code_scanner_icon">QR Code Scanner Icon</string>
+    <string name="add">Add</string>
+    <string name="code_de_session">Session Code: %1$s</string>
+    <string name="chargement">Loading...</string>
+    <string name="participants">Participants:</string>
+    <string name="aucun_participant">No participants</string>
+    <string name="choisis_ton_pseudo">Choose your nickname!</string>
+    <string name="pseudo_vide_ou_d_j_pris">Nickname empty or already taken</string>
+    <string name="participantss">Participants</string>
+    <string name="classement_final">Final ranking</string>
+    <string name="voici_les_mots_faire_deviner">Here are the words to guess</string>
+    <string name="temps_restant_secondes">%1$d seconds remaining</string>
+    <string name="temps_coul">Time elapsed</string>
+    <string name="nombre_de_gorg_es_distribuer">Sips to distribute: %1$d</string>
+    <string name="suggestions_de_mots">Word suggestions</string>
+    <string name="sugg_rer_un_mot">Suggest a word</string>
+    <string name="temps_restant_s">%1$d seconds remaining</string>
+    <string name="soumettre_la_suggestion">Submit suggestion</string>
+    <string name="votre_score">Your score: %1$d</string>
+    <string name="mots_trouver">Words to find</string>
+    <string name="classement">Ranking</string>
+</resources>
