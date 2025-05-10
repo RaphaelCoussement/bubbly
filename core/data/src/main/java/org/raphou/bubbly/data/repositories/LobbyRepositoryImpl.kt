@@ -158,9 +158,6 @@ class LobbyRepositoryImpl : ILobbyRepository {
         return try {
             // Recherche du lobby avec le code
             val querySnapshot = lobbiesCollection.whereEqualTo("code", code).get().await()
-            if (querySnapshot.isEmpty) {
-                throw LobbyException.LobbyNotFound("Aucun lobby trouvé avec le code $code")
-            }
 
             // Récupération du lobby
             val lobbyDoc = querySnapshot.documents.first()
@@ -211,7 +208,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
             }
         } catch (e: Exception) {
             Log.e("LobbyRepository", "Erreur lors de la jonction au lobby", e)
-            throw e
+            return Lobby()
         }
     }
 
@@ -673,5 +670,34 @@ class LobbyRepositoryImpl : ILobbyRepository {
         return lastPlayer?.get("playerId") as? String
     }
 
+    override suspend fun deleteLobbyByCode(code: String) {
+        try {
+            val querySnapshot = lobbiesCollection
+                .whereEqualTo("code", code)
+                .get()
+                .await()
+
+            for (document in querySnapshot.documents) {
+                document.reference.delete().await()
+                Log.d("LobbyRepository", "Lobby supprimé : ${document.id}")
+            }
+
+        } catch (e: Exception) {
+            Log.e("LobbyRepository", "Erreur lors de la suppression du lobby", e)
+            throw e
+        }
+    }
+    override suspend fun doesLobbyCodeExist(code: String): Boolean {
+        return try {
+            val querySnapshot = lobbiesCollection
+                .whereEqualTo("code", code)
+                .get()
+                .await()
+            !querySnapshot.isEmpty
+        } catch (e: Exception) {
+            Log.e("LobbyRepository", "Erreur lors de la vérification du code", e)
+            false
+        }
+    }
 }
 
