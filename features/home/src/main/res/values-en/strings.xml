@@ -25,4 +25,6 @@
     <string name="fran_ais">French</string>
     <string name="anglais">English</string>
     <string name="noter_l_application">Rate the application</string>
+    <string name="code_incorrect">Incorrect code</string>
+    <string name="code_de_sessionn">Session code : %1$s</string>
 </resources>

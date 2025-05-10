@@ -1,15 +1,19 @@
 package org.raphou.bubbly
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import org.raphou.bubbly.domain.home.LanguageManager
 import org.raphou.bubbly.game.FinalRankingScreen
 import org.raphou.bubbly.game.FirstPlayerScreen
 import org.raphou.bubbly.game.OtherPlayerScreen
@@ -23,14 +27,30 @@ import org.raphou.bubbly.home.JoinLobbyScreen
 import org.raphou.bubbly.home.RulesScreen
 import org.raphou.bubbly.home.SettingsScreen
 import org.raphou.bubbly.home.SplashScreen
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
+    override fun attachBaseContext(newBase: Context) {
+        val lang = LanguageManager.getSavedLanguage(newBase)
+        val context = if (lang != "auto") {
+            LanguageManager.applyLanguage(newBase, lang)
+        } else {
+            newBase
+        }
+        super.attachBaseContext(context)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContent {
-            Content()
+            val LocalAppLocale = compositionLocalOf { Locale.getDefault() }
+            val lang = LanguageManager.getSavedLanguage(this)
+            val locale = Locale(lang)
+
+            CompositionLocalProvider(LocalAppLocale provides locale) {
+                Content()
+            }
         }
     }
 }

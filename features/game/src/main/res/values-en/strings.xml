@@ -28,4 +28,7 @@
     <string name="votre_score">Your score: %1$d</string>
     <string name="mots_trouver">Words to find</string>
     <string name="classement">Ranking</string>
+    <string name="meilleures_histoires">Best stories</string>
+    <string name="meilleure_histoire">Best story</string>
+    <string name="votez_pour_un_joueur">Vote for a player</string>
 </resources>

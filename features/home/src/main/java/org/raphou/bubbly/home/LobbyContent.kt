@@ -77,7 +77,7 @@ fun LobbyContent(lobby: Lobby?, onBack: () -> Unit, players: List<Player>) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Code incorrect",
+                            text = stringResource(code_incorrect),
                             color = colorResource(id = R.color.orange_primary),
                             style = MaterialTheme.typography.headlineMedium,
                             textAlign = TextAlign.Center
@@ -105,7 +105,10 @@ fun LobbyContent(lobby: Lobby?, onBack: () -> Unit, players: List<Player>) {
 
                     // Section Code de Session avec l'icône pour afficher/cacher le QR Code
                     Text(
-                        text = "Code de session: ${lobby?.code ?: "Chargement..."}",
+                        text = stringResource(
+                            code_de_sessionn,
+                            lobby?.code ?: stringResource(chargement)
+                        ),
                         style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
                         color = colorResource(id = R.color.orange_primary),
                         modifier = Modifier
@@ -158,7 +161,7 @@ fun LobbyContent(lobby: Lobby?, onBack: () -> Unit, players: List<Player>) {
                         if (players.isEmpty()) {
                             item {
                                 Text(
-                                    text = "Aucun participant",
+                                    text = stringResource(aucun_participant),
                                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                                     color = Color.Gray,
                                     modifier = Modifier
