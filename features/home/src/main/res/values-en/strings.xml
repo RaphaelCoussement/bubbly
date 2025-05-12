@@ -27,4 +27,5 @@
     <string name="noter_l_application">Rate the application</string>
     <string name="code_incorrect">Incorrect code</string>
     <string name="code_de_sessionn">Session code : %1$s</string>
+    <string name="ton_pseudo">Your pseudo</string>
 </resources>

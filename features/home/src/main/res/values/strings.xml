@@ -27,4 +27,5 @@
     <string name="noter_l_application">Noter l\'application</string>
     <string name="code_incorrect">Code incorrect</string>
     <string name="code_de_sessionn">Code de session: %1$s</string>
+    <string name="ton_pseudo">Ton pseudo</string>
 </resources>

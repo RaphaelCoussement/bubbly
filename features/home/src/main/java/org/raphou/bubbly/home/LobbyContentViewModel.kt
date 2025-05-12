@@ -8,11 +8,12 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.raphou.bubbly.domain.home.IUserPreferencesRepository
 import org.raphou.bubbly.domain.lobby.ILobbyRepository
 
 class LobbyContentViewModel() : ViewModel(), KoinComponent {
-
     private val lobbyRepository: ILobbyRepository by inject()
+    private val userPreferencesRepository: IUserPreferencesRepository by inject()
 
     private val _codeIsValid = mutableStateOf<Boolean?>(null)
     val codeIsValid: State<Boolean?> = _codeIsValid
@@ -26,12 +27,17 @@ class LobbyContentViewModel() : ViewModel(), KoinComponent {
             }
         }
     }
+
     fun deleteLobbyByCode(code: String) {
         viewModelScope.launch {
             try {
-                lobbyRepository.deleteLobbyByCode(code)
+                val player = userPreferencesRepository.getPseudo()
+                if (player != null) {
+                    val pseudoId = lobbyRepository.getPlayer(player)
+                    lobbyRepository.deleteLobbyByCode(code, pseudoId.id)
+                }
             } catch (e: Exception) {
-                Log.e("LobbyViewModel", "Erreur lors de la suppression du lobby", e)
+                Log.e("LobbyViewModel", "Erreur lors de la suppression du joueur ou du lobby", e)
             }
         }
     }
