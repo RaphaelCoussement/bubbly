@@ -330,7 +330,6 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
 
 
     override suspend fun resetGame(lobbyId: String, playerId: String) {
-
         // Récupére et affiche les 4 mots qu'il fallait trouver
         val wordsQuery = wordsSelectedCollection.whereEqualTo("lobbyId", lobbyId).get().await()
         wordsQuery.documents.mapNotNull { it.getString("word") }
@@ -416,7 +415,4 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
             document.reference.delete().await()
         }
     }
-
-
-
 }

@@ -71,7 +71,6 @@ class OtherPlayerScreenViewModel : ViewModel(), KoinComponent {
                 val pseudo = userPreferencesRepository.getPseudo()
                 if (pseudo != null) {
                     val player = lobbyRepository.getPlayer(pseudo)
-                    wordRepository.resetGame(lobbyId, player.id)
                     _suggestions.value = emptyList()
                     wordRepository.calculatePlayerScore(lobbyId, player.id)
                     fetchFinalScore(lobbyId)

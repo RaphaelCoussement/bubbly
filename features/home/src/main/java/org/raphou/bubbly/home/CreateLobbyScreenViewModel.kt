@@ -66,7 +66,7 @@ class CreateLobbyScreenViewModel() : ViewModel(), KoinComponent {
             // Vérifie d'abord si un lobby est défini localement
             if (lobby != null) {
                 // Vérifie côté serveur si le lobby existe toujours
-                val exists = lobbyRepository.doesLobbyCodeExist(lobby.id)
+                val exists = lobbyRepository.doesLobbyCodeExist(lobby.code)
                 if (!exists) {
                     _navigationEvent.send(CreateLobbyNavigationEvent.NavigateToHome)
                     return@launch
