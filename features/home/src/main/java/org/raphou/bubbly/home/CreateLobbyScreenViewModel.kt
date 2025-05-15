@@ -62,17 +62,27 @@ class CreateLobbyScreenViewModel() : ViewModel(), KoinComponent {
     fun startGame() {
         viewModelScope.launch {
             val lobby = _currentLobby.value
-            if (lobby != null) {
-                val currentPlayers = _players.value.toMutableList()
 
+            // Vérifie d'abord si un lobby est défini localement
+            if (lobby != null) {
+                // Vérifie côté serveur si le lobby existe toujours
+                val exists = lobbyRepository.doesLobbyCodeExist(lobby.code)
+                if (!exists) {
+                    _navigationEvent.send(CreateLobbyNavigationEvent.NavigateToHome)
+                    return@launch
+                }
+
+                val currentPlayers = _players.value.toMutableList()
                 val player = userPreferencesRepository.getPseudo()
-                if (player != null){
+
+                if (player != null) {
                     val creator = lobbyRepository.getPlayer(player)
 
                     if (!currentPlayers.any { it.id == creator.id }) {
                         currentPlayers.add(creator)
                         lobbyRepository.addPlayerToLobby(lobby.id, creator)
                     }
+
                     lobbyRepository.orderFirstPlayers(lobby.id, currentPlayers)
                     lobbyRepository.startLobby(lobby.id)
 
@@ -83,11 +93,16 @@ class CreateLobbyScreenViewModel() : ViewModel(), KoinComponent {
                     _navigateToGame.value = lobby.id
                     _gameStartedEvent.send(Unit)
 
-                    _navigationEvent.send(CreateLobbyNavigationEvent.NavigateToGame(lobby.id, currentThemeId))
+                    _navigationEvent.send(
+                        CreateLobbyNavigationEvent.NavigateToGame(lobby.id, currentThemeId)
+                    )
                 }
+            } else {
+                _navigationEvent.send(CreateLobbyNavigationEvent.NavigateToHome)
             }
         }
     }
+
     fun stopListeningToLobbyPlayers() {
         lobbyRepository.stopListeningToLobbyPlayers()
     }
@@ -95,4 +110,5 @@ class CreateLobbyScreenViewModel() : ViewModel(), KoinComponent {
 
 sealed class CreateLobbyNavigationEvent {
     data class NavigateToGame(val lobbyId: String, val themeId: String?) : CreateLobbyNavigationEvent()
+    object NavigateToHome : CreateLobbyNavigationEvent()
 }

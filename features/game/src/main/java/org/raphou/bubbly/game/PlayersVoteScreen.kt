@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -82,7 +83,9 @@ fun PlayersVoteScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = if (winners.size > 1) "Meilleures histoires" else "Meilleure histoire",
+                    text = if (winners.size > 1) stringResource(R.string.meilleures_histoires) else stringResource(
+                        R.string.meilleure_histoire
+                    ),
                     style = MaterialTheme.typography.titleLarge,
                     color = Color(0xFFE53A0C)
                 )
@@ -104,7 +107,7 @@ fun PlayersVoteScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Votez pour un joueur",
+                    text = stringResource(R.string.votez_pour_un_joueur),
                     style = MaterialTheme.typography.titleLarge,
                     color = colorResource(id = orange_primary)
                 )

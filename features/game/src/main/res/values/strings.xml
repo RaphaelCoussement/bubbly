@@ -28,4 +28,7 @@
     <string name="votre_score">Votre score : %1$d</string>
     <string name="mots_trouver">Mots à trouver</string>
     <string name="classement">Classement</string>
+    <string name="meilleures_histoires">Meilleures histoires</string>
+    <string name="meilleure_histoire">Meilleure histoire</string>
+    <string name="votez_pour_un_joueur">Votez pour un joueur</string>
 </resources>

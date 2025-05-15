@@ -51,7 +51,7 @@ fun ChoosePseudoScreen(navController: NavHostController) {
                 viewModel.onPseudoChange(it)
                 error = false
             },
-            label = { Text("Ton pseudo") },
+            label = { Text(stringResource(org.raphou.bubbly.home.R.string.ton_pseudo)) },
             isError = error,
             singleLine = true,
             colors = outlinedTextFieldColors(
