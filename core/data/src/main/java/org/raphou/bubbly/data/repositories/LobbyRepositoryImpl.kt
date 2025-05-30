@@ -158,9 +158,6 @@ class LobbyRepositoryImpl : ILobbyRepository {
         return try {
             // Recherche du lobby avec le code
             val querySnapshot = lobbiesCollection.whereEqualTo("code", code).get().await()
-            if (querySnapshot.isEmpty) {
-                throw LobbyException.LobbyNotFound("Aucun lobby trouvé avec le code $code")
-            }
 
             // Récupération du lobby
             val lobbyDoc = querySnapshot.documents.first()
@@ -211,7 +208,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
             }
         } catch (e: Exception) {
             Log.e("LobbyRepository", "Erreur lors de la jonction au lobby", e)
-            throw e
+            return Lobby()
         }
     }
 
@@ -337,6 +334,7 @@ class LobbyRepositoryImpl : ILobbyRepository {
             throw LobbyException.LobbyNotFound("Erreur inconnue lors de la récupération du lobby $code")
         }
     }
+
 
     override fun listenToLobbyUpdates(lobbyId: String, onUpdate: (Lobby) -> Unit) {
         try {
@@ -673,5 +671,60 @@ class LobbyRepositoryImpl : ILobbyRepository {
         return lastPlayer?.get("playerId") as? String
     }
 
+    override suspend fun deleteLobbyByCode(code: String, pseudoId: String) {
+        try {
+            val querySnapshot = lobbiesCollection
+                .whereEqualTo("code", code)
+                .get()
+                .await()
+
+            for (document in querySnapshot.documents) {
+                val lobbyId = document.id
+
+                val playerSnapshot = lobbyPlayersCollection
+                    .whereEqualTo("lobbyId", lobbyId)
+                    .whereEqualTo("playerId", pseudoId)
+                    .get()
+                    .await()
+
+                for (playerDoc in playerSnapshot.documents) {
+                    playerDoc.reference.delete().await()
+                    Log.d("LobbyRepository", "Joueur $pseudoId supprimé du lobby $lobbyId")
+                }
+
+                // Vérifier s'il reste d'autres joueurs dans le lobby
+                val remainingPlayers = lobbyPlayersCollection
+                    .whereEqualTo("lobbyId", lobbyId)
+                    .get()
+                    .await()
+
+                if (remainingPlayers.isEmpty) {
+                    // Supprime le lobby s'il n'y a plus de joueurs
+                    document.reference.delete().await()
+                    Log.d("LobbyRepository", "Lobby supprimé : $lobbyId")
+                } else {
+                    Log.d("LobbyRepository", "Lobby non supprimé, d'autres joueurs sont encore présents.")
+                }
+            }
+
+        } catch (e: Exception) {
+            Log.e("LobbyRepository", "Erreur lors de la suppression du lobby ou du joueur", e)
+            throw e
+        }
+    }
+
+
+    override suspend fun doesLobbyCodeExist(code: String): Boolean {
+        return try {
+            val querySnapshot = lobbiesCollection
+                .whereEqualTo("code", code)
+                .get()
+                .await()
+            !querySnapshot.isEmpty
+        } catch (e: Exception) {
+            Log.e("LobbyRepository", "Erreur lors de la vérification du code", e)
+            false
+        }
+    }
 }
 

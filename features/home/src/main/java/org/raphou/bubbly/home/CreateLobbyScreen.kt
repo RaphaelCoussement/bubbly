@@ -31,6 +31,12 @@ fun CreateLobbyScreen(navController: NavHostController, themeId: String?) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+
+                is CreateLobbyNavigationEvent.NavigateToHome -> {
+                    navController.navigate("home") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             }
         }
     }

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Bubbly</string>
+    <string name="classement_final">Final ranking</string>
+    <string name="voici_les_mots_faire_deviner">"Here are the words to guess!"</string>
+    <string name="temps_coul">Time elapsed</string>
+    <string name="nombre_de_gorg_es_distribuer">Sips to distribute: %1$d</string>
+    <string name="suggestions_de_mots">Try to guess the words!</string>
+    <string name="sugg_rer_un_mot">Suggest a word</string>
+    <string name="temps_restant_secondes">%1$d seconds remaining</string>
+    <string name="soumettre_la_suggestion">Submit suggestion</string>
+    <string name="votre_score">Your score: %1$d</string>
+    <string name="mots_trouver">Words to find</string>
+    <string name="classement">Ranking</string>
+    <string name="temps_restant_s">%1$d seconds remaining</string>
+</resources>

@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -231,6 +232,18 @@ fun HomeScreen(navController: NavHostController) {
                     imageVector = Icons.Default.Add,
                     contentDescription = stringResource(add),
                     tint = Color.White
+                )
+            }
+            IconButton(
+                onClick = { navController.navigate("settings") },
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = stringResource(settings),
+                    tint = colorResource(id = color.orange_primary)
                 )
             }
         }

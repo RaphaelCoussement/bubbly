@@ -205,13 +205,11 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
         }
     }
 
-
-
     private fun levenshteinDistance(s1: String, s2: String): Int {
         val dp = Array(s1.length + 1) { IntArray(s2.length + 1) }
 
-        for (i in s1.indices) dp[i][0] = i
-        for (j in s2.indices) dp[0][j] = j
+        for (i in 0..s1.length) dp[i][0] = i
+        for (j in 0..s2.length) dp[0][j] = j
 
         for (i in 1..s1.length) {
             for (j in 1..s2.length) {
@@ -228,9 +226,11 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
     private fun isSimilar(word1: String, word2: String): Boolean {
         val normalized1 = word1.lowercase().trim()
         val normalized2 = word2.lowercase().trim()
-        return levenshteinDistance(normalized1, normalized2) <= 1 // Tolérance de 1 erreur
-    }
 
+        if (kotlin.math.abs(normalized1.length - normalized2.length) > 2) return false
+
+        return levenshteinDistance(normalized1, normalized2) <= 1
+    }
 
     override suspend fun getWordInfo(lobbyId: String,playerId: String, word: String): WordSelected? {
         try {
@@ -330,7 +330,6 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
 
 
     override suspend fun resetGame(lobbyId: String, playerId: String) {
-
         // Récupére et affiche les 4 mots qu'il fallait trouver
         val wordsQuery = wordsSelectedCollection.whereEqualTo("lobbyId", lobbyId).get().await()
         wordsQuery.documents.mapNotNull { it.getString("word") }
@@ -416,7 +415,4 @@ class WordRepositoryImpl(private val context: Context) : IWordRepository {
             document.reference.delete().await()
         }
     }
-
-
-
 }

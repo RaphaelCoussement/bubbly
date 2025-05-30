@@ -35,11 +35,9 @@ fun RankingScreen(navController: NavController, lobbyId: String, themeId: String
     val viewModel: RankingScreenViewModel = viewModel()
     val ranking = viewModel.ranking.value
 
-    LaunchedEffect(Unit) {
-        viewModel.fetchRanking(lobbyId)
-    }
-
     LaunchedEffect(key1 = lobbyId) {
+        delay(500)
+        viewModel.fetchRanking(lobbyId)
         delay(3000)
         viewModel.endCurrentTurn(lobbyId)
         viewModel.resetLobbyAfterRanking(lobbyId)

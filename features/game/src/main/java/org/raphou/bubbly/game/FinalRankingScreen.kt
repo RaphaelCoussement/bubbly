@@ -1,5 +1,6 @@
 package org.raphou.bubbly.game
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -43,8 +45,10 @@ fun FinalRankingScreen(navController: NavController, lobbyId: String) {
     val viewModel: FinalRankingScreenViewModel = viewModel()
     val ranking = viewModel.ranking.value
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
+        AdManager.loadAd(context)
         viewModel.fetchRanking(lobbyId)
     }
 
@@ -104,10 +108,16 @@ fun FinalRankingScreen(navController: NavController, lobbyId: String) {
 
         FloatingActionButton(
             onClick = {
-                coroutineScope.launch {
-                    viewModel.handleEndOfGame(lobbyId)
-                    navController.navigate("home") {
-                        popUpTo(0) { inclusive = true }
+                val activity = (context as? Activity)
+
+                if (activity != null) {
+                    AdManager.showAdIfAvailable(activity) {
+                        coroutineScope.launch {
+                            viewModel.handleEndOfGame(lobbyId)
+                            navController.navigate("home") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
                     }
                 }
             },
