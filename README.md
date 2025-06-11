@@ -1,20 +1,36 @@
-# Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+# 🍾 Bubbly
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+🎉 *Un jeu de soirée pour faire deviner des mots en racontant des histoires inattendues !*
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+---
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+## 📱 Présentation
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+**Bubbly** est un jeu de soirée mobile développé sur Android. Le principe est simple : faire deviner 4 mots de difficultés différentes en créant une histoire. Le joueur qui devine correctement gagne des points, et le "compteur" distribue des gorgées en fonction de la difficulté du mot.
+
+À la fin d’un tour complet (chaque joueur a été compteur une fois), les participants votent pour la meilleure histoire, qui rapporte un bonus de points. Le joueur avec le plus de points remporte la partie !
+
+🧩 Fonctionnalités principales :
+- Deviner 4 mots avec 4 niveaux de difficulté
+- Raconter des histoires originales pour les faire deviner
+- Thèmes personnalisés pour les parties
+- Système de points et de classement final
+- Distribution de gorgées pour animer la soirée 🍻
+
+---
+
+## 🔧 Technologies utilisées
+
+- Kotlin
+- Jetpack Compose
+- Android SDK
+- Architecture MVVM
+- Navigation Compose
+
+---
+
+## 📂 Lancer le projet
+
+1. Clone ce dépôt :
+   ```bash
+   git clone https://github.com/RaphaelCoussement/bubbly.git
